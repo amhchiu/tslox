@@ -50,6 +50,13 @@ export class Lox {
     console.log(source);
 
     // TODO: Create scanner from source, scan tokens and print each token
+    // const scanner = new Scanner(source);
+    // const tokens: Token[] = scanner.scanTokens();
+
+    // // For now, just print the tokens.
+    // for (const token of tokens) {
+    //   console.log(token);
+    // }
   }
 
   static error(line: number, message: string): void {

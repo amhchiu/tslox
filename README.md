@@ -37,3 +37,33 @@ To compile the TypeScript code:
 ```bash
 npx tsc
 ```
+
+## Notes
+
+We have built the REPL command to read the source file. This takes the file path
+
+> Lox.ts <filepath>
+
+or without any argument it will open an interactive prompt.
+
+It reads the content of the file, creates a scanner class with the file contents, and scans the tokens.
+
+We are currently building the the Scanner class. This takes the source code, iterates through the Lexemes and builds the list of tokens. 🥑
+
+https://craftinginterpreters.com/scanning.html#recognizing-lexemes
+
+Next: This list of tokens will feed into the Parser, which builds the abstract syntax tree.
+
+```
+[ Source Code ]  --> Raw text (e.g., "var average = 5;")
+       ↓
+ 1. SCANNER (Lexer)  <-- Consumes characters, groups them into Tokens
+       ↓
+   [ Tokens ]     --> Structured packets of data (The Token class!)
+       ↓
+ 2. PARSER        <-- Consumes tokens, groups them into an AST
+       ↓
+[ Syntax Tree ]   --> Hierarchical representation of program logic
+       ↓
+ 3. INTERPRETER   <-- Executes the AST (or Compiler emits bytecode)
+```
