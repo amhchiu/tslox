@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { stdin, stdout } from "node:process";
 import * as readline from "node:readline/promises";
+import { Scanner } from "./Scanner.js";
+import type { Token } from "./Token.js";
 
 export class Lox {
   static hadError = false;
@@ -50,13 +52,13 @@ export class Lox {
     console.log(source);
 
     // TODO: Create scanner from source, scan tokens and print each token
-    // const scanner = new Scanner(source);
-    // const tokens: Token[] = scanner.scanTokens();
+    const scanner = new Scanner(source);
+    const tokens: Token[] = scanner.scanTokens();
 
-    // // For now, just print the tokens.
-    // for (const token of tokens) {
-    //   console.log(token);
-    // }
+    // For now, just print the tokens.
+    for (const token of tokens) {
+      console.log(token);
+    }
   }
 
   static error(line: number, message: string): void {

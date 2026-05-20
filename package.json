@@ -8,6 +8,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/Lox.js",
     "test": "vitest",
     "lint": "oxlint . --ignore-pattern \"node_modules\" --ignore-pattern \"dist\"",
     "format": "oxfmt . --write"

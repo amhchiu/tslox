@@ -1,3 +1,4 @@
+import { Lox } from "./Lox.js";
 import { Token, type Literal } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -67,6 +68,9 @@ export class Scanner {
         break;
       case "*":
         this.addToken(TokenType.STAR);
+        break;
+      default:
+        Lox.error(this.line, "Unexpected character.");
         break;
     }
   }
