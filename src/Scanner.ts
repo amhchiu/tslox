@@ -3,6 +3,28 @@ import { Token, type Literal } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 /**
+ * To handle keywords, we see if the identifier’s lexeme is one of the reserved words
+ */
+const KEYWORDS: Record<string, TokenType> = {
+  and: TokenType.AND,
+  class: TokenType.CLASS,
+  else: TokenType.ELSE,
+  false: TokenType.FALSE,
+  for: TokenType.FOR,
+  fun: TokenType.FUN,
+  if: TokenType.IF,
+  nil: TokenType.NIL,
+  or: TokenType.OR,
+  print: TokenType.PRINT,
+  return: TokenType.RETURN,
+  super: TokenType.SUPER,
+  this: TokenType.THIS,
+  true: TokenType.TRUE,
+  var: TokenType.VAR,
+  while: TokenType.WHILE,
+};
+
+/**
  * @link https://craftinginterpreters.com/scanning.html#the-scanner-class
  */
 export class Scanner {
@@ -15,7 +37,7 @@ export class Scanner {
   /**  */
   private line = 1;
 
-  constructor(private readonly source: string) { }
+  constructor(private readonly source: string) {}
 
   scanTokens() {
     while (!this.isAtEnd()) {
@@ -37,17 +59,15 @@ export class Scanner {
     while (this.isDigit(this.peek())) this.advance();
 
     // Look for a fractional part.
-    if (this.peek() == '.' && this.isDigit(this.peekNext())) {
+    if (this.peek() == "." && this.isDigit(this.peekNext())) {
       // Consume the "."
       this.advance();
 
       while (this.isDigit(this.peek())) this.advance();
     }
 
-    this.addToken(TokenType.NUMBER,
-      Number(this.source.substring(this.start, this.current)));
+    this.addToken(TokenType.NUMBER, Number(this.source.substring(this.start, this.current)));
   }
-
 
   /**
    * - Scan the token at this.current
@@ -97,21 +117,21 @@ export class Scanner {
       case ">":
         this.addToken(this.match("=") ? TokenType.GREATER_EQUAL : TokenType.GREATER);
         break;
-      case '/':
-        if (this.match('/')) {
+      case "/":
+        if (this.match("/")) {
           // A comment goes until the end of the line.
           // comments are not meaningful so we ignore them in parser, hence advance
-          while (this.peek() != '\n' && !this.isAtEnd()) this.advance();
+          while (this.peek() != "\n" && !this.isAtEnd()) this.advance();
         } else {
           this.addToken(TokenType.SLASH);
         }
         break;
-      case ' ':
-      case '\r':
-      case '\t':
+      case " ":
+      case "\r":
+      case "\t":
         // Ignore whitespace.
         break;
-      case '\n':
+      case "\n":
         this.line++;
         break;
       // string literal
@@ -122,6 +142,9 @@ export class Scanner {
         // allow: 1234, 12.34 invalid: .1234, 1234.
         if (this.isDigit(c)) {
           this.number();
+          // assume any lexeme starting with underscore or letter is an identifier
+        } else if (this.isAlpha(c)) {
+          this.identifier();
         } else {
           Lox.error(this.line, "Unexpected character.");
         }
@@ -129,9 +152,22 @@ export class Scanner {
     }
   }
 
+  /**
+   * Check the identifier is a reserved keyword
+   */
+  private identifier() {
+    while (this.isAlphaNumeric(this.peek())) this.advance();
+
+    const text: string = this.source.substring(this.start, this.current);
+    // is it reserve word or user defined identifier
+    const type = KEYWORDS[text] ?? TokenType.IDENTIFIER;
+
+    this.addToken(type);
+  }
+
   private string(): void {
     while (this.peek() !== '"' && !this.isAtEnd()) {
-      if (this.peek() === '\n') this.line++;
+      if (this.peek() === "\n") this.line++;
       this.advance();
     }
 
@@ -148,12 +184,11 @@ export class Scanner {
     this.addToken(TokenType.STRING, value);
   }
 
-
   /**
    * e.g. we arrive at '!', and look at next character
    * if it is the end of the lexeme, false
    * if next character equals expected, it is match ('!='), return true
-  */
+   */
   private match(expected: string): boolean {
     if (this.isAtEnd()) return false;
     if (this.source.charAt(this.current) !== expected) return false;
@@ -164,21 +199,28 @@ export class Scanner {
 
   private peek(): string {
     // one character lookahead
-    if (this.isAtEnd()) return '\0';
+    if (this.isAtEnd()) return "\0";
     return this.source.charAt(this.current);
   }
 
   private peekNext(): string {
-    if (this.current + 1 >= this.source.length) return '\0';
+    if (this.current + 1 >= this.source.length) return "\0";
     return this.source.charAt(this.current + 1);
-  } 
+  }
 
+  private isAlpha(c: string): boolean {
+    return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c == "_";
+  }
+
+  private isAlphaNumeric(c: string): boolean {
+    return this.isAlpha(c) || this.isDigit(c);
+  }
 
   /**
    * digit is 0 to 9
-  */
+   */
   private isDigit(c: string): boolean {
-    return c >= '0' && c <= '9';
+    return c >= "0" && c <= "9";
   }
 
   private advance(): string {
