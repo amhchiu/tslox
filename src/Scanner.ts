@@ -122,6 +122,9 @@ export class Scanner {
           // A comment goes until the end of the line.
           // comments are not meaningful so we ignore them in parser, hence advance
           while (this.peek() != "\n" && !this.isAtEnd()) this.advance();
+        } else if (this.match("*")) {
+          // same with block comment, we don't create tokens
+          this.blockComment();
         } else {
           this.addToken(TokenType.SLASH);
         }
@@ -163,6 +166,25 @@ export class Scanner {
     const type = KEYWORDS[text] ?? TokenType.IDENTIFIER;
 
     this.addToken(type);
+  }
+
+  private blockComment(): void {
+    while (!this.isAtEnd()) {
+      if (this.peek() === "\n") {
+        this.line++;
+      }
+
+      if (this.peek() === "*" && this.peekNext() === "/") {
+        // Consume '*' and '/'
+        this.advance();
+        this.advance();
+        return;
+      }
+
+      this.advance();
+    }
+
+    Lox.error(this.line, "Unterminated block comment.");
   }
 
   private string(): void {
@@ -223,6 +245,7 @@ export class Scanner {
     return c >= "0" && c <= "9";
   }
 
+  /** Advance the index pointing to next character */
   private advance(): string {
     return this.source.charAt(this.current++);
   }
