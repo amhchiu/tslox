@@ -15,7 +15,7 @@ export class Scanner {
   /**  */
   private line = 1;
 
-  constructor(private readonly source: string) {}
+  constructor(private readonly source: string) { }
 
   scanTokens() {
     while (!this.isAtEnd()) {
@@ -32,6 +32,22 @@ export class Scanner {
   private isAtEnd(): boolean {
     return this.current >= this.source.length;
   }
+
+  private number() {
+    while (this.isDigit(this.peek())) this.advance();
+
+    // Look for a fractional part.
+    if (this.peek() == '.' && this.isDigit(this.peekNext())) {
+      // Consume the "."
+      this.advance();
+
+      while (this.isDigit(this.peek())) this.advance();
+    }
+
+    this.addToken(TokenType.NUMBER,
+      Number(this.source.substring(this.start, this.current)));
+  }
+
 
   /**
    * - Scan the token at this.current
@@ -69,10 +85,100 @@ export class Scanner {
       case "*":
         this.addToken(TokenType.STAR);
         break;
+      case "!":
+        this.addToken(this.match("=") ? TokenType.BANG_EQUAL : TokenType.BANG);
+        break;
+      case "=":
+        this.addToken(this.match("=") ? TokenType.EQUAL_EQUAL : TokenType.EQUAL);
+        break;
+      case "<":
+        this.addToken(this.match("=") ? TokenType.LESS_EQUAL : TokenType.LESS);
+        break;
+      case ">":
+        this.addToken(this.match("=") ? TokenType.GREATER_EQUAL : TokenType.GREATER);
+        break;
+      case '/':
+        if (this.match('/')) {
+          // A comment goes until the end of the line.
+          // comments are not meaningful so we ignore them in parser, hence advance
+          while (this.peek() != '\n' && !this.isAtEnd()) this.advance();
+        } else {
+          this.addToken(TokenType.SLASH);
+        }
+        break;
+      case ' ':
+      case '\r':
+      case '\t':
+        // Ignore whitespace.
+        break;
+      case '\n':
+        this.line++;
+        break;
+      // string literal
+      case '"':
+        this.string();
+        break;
       default:
-        Lox.error(this.line, "Unexpected character.");
+        // allow: 1234, 12.34 invalid: .1234, 1234.
+        if (this.isDigit(c)) {
+          this.number();
+        } else {
+          Lox.error(this.line, "Unexpected character.");
+        }
         break;
     }
+  }
+
+  private string(): void {
+    while (this.peek() !== '"' && !this.isAtEnd()) {
+      if (this.peek() === '\n') this.line++;
+      this.advance();
+    }
+
+    if (this.isAtEnd()) {
+      Lox.error(this.line, "Unterminated string.");
+      return;
+    }
+
+    // The closing ".
+    this.advance();
+
+    // Trim the surrounding quotes.
+    const value = this.source.substring(this.start + 1, this.current - 1);
+    this.addToken(TokenType.STRING, value);
+  }
+
+
+  /**
+   * e.g. we arrive at '!', and look at next character
+   * if it is the end of the lexeme, false
+   * if next character equals expected, it is match ('!='), return true
+  */
+  private match(expected: string): boolean {
+    if (this.isAtEnd()) return false;
+    if (this.source.charAt(this.current) !== expected) return false;
+
+    this.current++;
+    return true;
+  }
+
+  private peek(): string {
+    // one character lookahead
+    if (this.isAtEnd()) return '\0';
+    return this.source.charAt(this.current);
+  }
+
+  private peekNext(): string {
+    if (this.current + 1 >= this.source.length) return '\0';
+    return this.source.charAt(this.current + 1);
+  } 
+
+
+  /**
+   * digit is 0 to 9
+  */
+  private isDigit(c: string): boolean {
+    return c >= '0' && c <= '9';
   }
 
   private advance(): string {
