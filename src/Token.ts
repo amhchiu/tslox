@@ -1,6 +1,6 @@
 import type { TokenType } from "./TokenType.ts";
 
-export type Literal = string | number | boolean | null;
+export type TokenLiteral = string | number | boolean | null;
 
 /**
  * @example
@@ -16,7 +16,7 @@ export class Token {
   constructor(
     private readonly type: TokenType,
     private readonly lexeme: string,
-    private readonly literal: Literal,
+    private readonly literal: TokenLiteral,
     private readonly line: number,
   ) {}
 

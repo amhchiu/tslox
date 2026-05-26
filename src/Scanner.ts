@@ -1,5 +1,5 @@
 import { Lox } from "./Lox.js";
-import { Token, type Literal } from "./Token.js";
+import { Token, type TokenLiteral } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 /**
@@ -250,7 +250,7 @@ export class Scanner {
     return this.source.charAt(this.current++);
   }
 
-  private addToken(type: TokenType, literal: Literal = null) {
+  private addToken(type: TokenType, literal: TokenLiteral = null) {
     // from the source code, extract the slice of text between beginning of lexeme we are scanning to current index
     const text = this.source.substring(this.start, this.current);
     // Append newly created token to end of tokens array
