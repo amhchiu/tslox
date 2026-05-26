@@ -21,17 +21,16 @@
  */
 
 import type { Token, TokenLiteral } from "./Token.js";
-import type { TokenType } from "./TokenType.js";
 
 // e.g Interpreter or ASTPrinter.
-interface Visitor<R> {
+export interface Visitor<R> {
   visitBinaryExpr(expr: Binary): R;
   visitGroupingExpr(expr: Grouping): R;
   visitLiteralExpr(expr: Literal): R;
   visitUnaryExpr(expr: Unary): R;
 }
 
-// Visitor pattern, double dispatch. 
+// Visitor pattern, double dispatch.
 export abstract class Expr {
   abstract accept<R>(visitor: Visitor<R>): R;
 }
@@ -92,7 +91,10 @@ export class Literal extends Expr {
  * unary → ( "-" | "!" ) expression ;
  */
 export class Unary extends Expr {
-  constructor(readonly operator: Token, readonly right: Expr) {
+  constructor(
+    readonly operator: Token,
+    readonly right: Expr,
+  ) {
     super();
   }
 

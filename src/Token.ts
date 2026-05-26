@@ -14,10 +14,10 @@ export type TokenLiteral = string | number | boolean | null;
  */
 export class Token {
   constructor(
-    private readonly type: TokenType,
-    private readonly lexeme: string,
-    private readonly literal: TokenLiteral,
-    private readonly line: number,
+    readonly type: TokenType,
+    readonly lexeme: string,
+    readonly literal: TokenLiteral,
+    readonly line: number,
   ) {}
 
   toString(): string {
