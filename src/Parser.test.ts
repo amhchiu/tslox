@@ -58,4 +58,12 @@ describe("Parser & AstPrinter Integration", () => {
     expect(parseAndPrint("false")).toBe("false");
     expect(parseAndPrint("nil")).toBe("nil");
   });
+
+  it("parses comma operator correctly (lowest precedence, left-associative)", () => {
+    // 1, 2, 3 should group as ((1, 2), 3)
+    expect(parseAndPrint("1, 2, 3")).toBe("(, (, 1 2) 3)");
+    
+    // Comma has lower precedence than addition and multiplication
+    expect(parseAndPrint("1 + 2, 3 * 4")).toBe("(, (+ 1 2) (* 3 4))");
+  });
 });

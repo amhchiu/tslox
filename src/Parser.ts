@@ -13,7 +13,8 @@ class ParseError extends Error {
  * Each grammar rule becomes a method inside this class
  * 
  * ```
- *  expression     → equality ;
+ *  expression     → comma ;
+    comma          → equality ( "," equality)* ;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     term           → factor ( ( "-" | "+" ) factor )* ;
@@ -49,7 +50,22 @@ export class Parser {
    * expression -> equality
    */
   private expression() {
-    return this.equality();
+    return this.comma();
+  }
+
+  /**
+   * comma → equality ( "," equality)* ;
+   */
+  private comma(): Expr {
+    let expr = this.equality();
+    
+    while(this.match(TokenType.COMMA)) {
+      const operator = this.previous();
+      const right = this.equality();
+      expr = new Binary(expr, operator, right);
+    }
+
+    return expr;
   }
 
   /**
