@@ -3,6 +3,9 @@ import { stdin, stdout } from "node:process";
 import * as readline from "node:readline/promises";
 import { Scanner } from "./Scanner.js";
 import type { Token } from "./Token.js";
+import { TokenType } from "./TokenType.js";
+import { Parser } from "./Parser.js";
+import { AstPrinter } from "./AstPrinter.js";
 
 export class Lox {
   static hadError = false;
@@ -49,16 +52,15 @@ export class Lox {
   }
 
   private static run(source: string): void {
-    console.log(source);
-
-    // TODO: Create scanner from source, scan tokens and print each token
     const scanner = new Scanner(source);
     const tokens: Token[] = scanner.scanTokens();
 
-    // For now, just print the tokens.
-    for (const token of tokens) {
-      console.log(token);
-    }
+    const parser = new Parser(tokens);
+    const expression = parser.parse()
+
+    if (!expression || this.hadError) return;
+
+    console.log(new AstPrinter().print(expression))
   }
 
   static error(line: number, message: string): void {
@@ -68,6 +70,14 @@ export class Lox {
   private static report(line: number, where: string, message: string): void {
     console.error(`[line ${line}] Error${where}: ${message}`);
     Lox.hadError = true;
+  }
+
+  static tokenError(token: Token, message: string) {
+    if (token.type == TokenType.EOF) {
+      Lox.report(token.line, " at end", message);
+    } else {
+      Lox.report(token.line, " at '" + token.lexeme + "'", message);
+    }
   }
 }
 

@@ -48,7 +48,9 @@ or without any argument it will open an interactive prompt.
 
 It reads the content of the file, creates a scanner class with the file contents, and scans the tokens.
 
-We have built the the Scanner class. This takes the source code, iterates through the Lexemes and builds the list of tokens. 🥑
+We have built the the Scanner class. This takes the source code, iterates through the Lexemes and builds the list of tokens.
+
+We have defined the grammar rules of our language and implemented the expression rule as classes using the visitor pattern.
 
 https://craftinginterpreters.com/representing-code.html
 
