@@ -28,7 +28,20 @@ class ParseError extends Error {
                    | primary ;
     primary        → NUMBER | STRING | "true" | "false" | "nil"
                    | "(" expression ")" ;
+                   // Error production rules - missing left hand side operand
+                   | ( "!=" | "==" ) equality
+                   | ( ">" | ">=" | "<" | "<=" ) comparison
+                   | ( "+" ) term 
+                   | ( "/" | "*" ) factor ;
+
+
    ```
+ * 
+ * For the error production rules, we want to error when the left hand side operand is missing for the binary expressions
+ * We also want to continue consuming the rest of the expressions.
+ *
+ * This is why the right-hand operand rule is the same precedence level, so the remaining tokens are processed with the same
+ * production rule.
  */
 export class Parser {
   private current = 0;
@@ -182,6 +195,31 @@ export class Parser {
       const expr = this.expression();
       this.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
       return new Grouping(expr);
+    }
+
+    // Error productions.
+    if (this.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
+      this.error(this.previous(), "Missing left-hand operand.");
+      this.equality();
+      return new Literal(null)
+    }
+
+    if (this.match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
+      this.error(this.previous(), "Missing left-hand operand.");
+      this.comparison();
+      return new Literal(null);
+    }
+
+    if (this.match(TokenType.PLUS)) {
+      this.error(this.previous(), "Missing left-hand operand.");
+      this.term();
+      return new Literal(null);
+    }
+
+    if (this.match(TokenType.SLASH, TokenType.STAR)) {
+      this.error(this.previous(), "Missing left-hand operand.");
+      this.factor();
+      return new Literal(null);
     }
 
     throw this.error(this.peek(), "Expect expression.");

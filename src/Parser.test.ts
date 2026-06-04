@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { Scanner } from "./Scanner.js";
 import { Parser } from "./Parser.js";
 import { AstPrinter } from "./AstPrinter.js";
+import { Lox } from "./Lox.js";
 
 function parseAndPrint(source: string): string {
   const scanner = new Scanner(source);
@@ -76,5 +77,21 @@ describe("Parser & AstPrinter Integration", () => {
 
     // Right-associativity: a ? b : c ? d : e parses as a ? b : (c ? d : e)
     expect(parseAndPrint("1 ? 2 : 3 ? 4 : 5")).toBe("(? 1 2 (? 3 4 5))");
+  });
+
+  it("handles error productions for missing left operand", () => {
+    // Reset Lox error state
+    Lox.hadError = false;
+
+    // Leading binary operator '+' is an error, returns 'nil'
+    expect(parseAndPrint("+ 2 * 3")).toBe("nil");
+    expect(Lox.hadError).toBe(true);
+
+    Lox.hadError = false;
+    expect(parseAndPrint("== 5")).toBe("nil");
+    expect(Lox.hadError).toBe(true);
+
+    // Reset error state after test
+    Lox.hadError = false;
   });
 });
