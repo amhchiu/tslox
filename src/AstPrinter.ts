@@ -5,6 +5,7 @@ import {
   type Grouping,
   type Literal,
   type Unary,
+  Ternary,
 } from "./Expr.js";
 
 export class AstPrinter implements Visitor<string> {
@@ -27,6 +28,10 @@ export class AstPrinter implements Visitor<string> {
 
   visitUnaryExpr(expr: Unary): string {
     return this.parenthesize(expr.operator.lexeme, expr.right);
+  }
+
+  visitTernaryExpr(expr: Ternary): string {
+    return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch)
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {

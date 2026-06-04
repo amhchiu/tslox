@@ -56,11 +56,11 @@ export class Lox {
     const tokens: Token[] = scanner.scanTokens();
 
     const parser = new Parser(tokens);
-    const expression = parser.parse()
+    const expression = parser.parse();
 
     if (!expression || this.hadError) return;
 
-    console.log(new AstPrinter().print(expression))
+    console.log(new AstPrinter().print(expression));
   }
 
   static error(line: number, message: string): void {

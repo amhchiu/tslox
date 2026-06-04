@@ -1,4 +1,4 @@
-import { Binary, Expr, Grouping, Literal, Unary } from "./Expr.js";
+import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr.js";
 import { Lox } from "./Lox.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
@@ -10,11 +10,16 @@ class ParseError extends Error {
 }
 
 /**
+ * The stratified grammar (concrete grammar) is used by the Parser to enforce
+ * associativity and precedence. This builds the abstract syntax tree which is made up of the unstratratified grammar,
+ * since the associativity and precedence is captured by the shape of the tree.
+ *
  * Each grammar rule becomes a method inside this class
  * 
  * ```
  *  expression     → comma ;
-    comma          → equality ( "," equality)* ;
+    comma          → ternary ( "," ternary)* ;
+    ternary        → equality ( "?" expression ":" ternary)? ;
     equality       → comparison ( ( "!=" | "==" ) comparison )* ;
     comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
     term           → factor ( ( "-" | "+" ) factor )* ;
@@ -54,15 +59,31 @@ export class Parser {
   }
 
   /**
-   * comma → equality ( "," equality)* ;
+   * comma → ternary ( "," ternary)* ;
    */
   private comma(): Expr {
-    let expr = this.equality();
-    
-    while(this.match(TokenType.COMMA)) {
+    let expr = this.ternary();
+
+    while (this.match(TokenType.COMMA)) {
       const operator = this.previous();
-      const right = this.equality();
+      const right = this.ternary();
       expr = new Binary(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  /**
+   * ternary → equality ( "?" expression ":" ternary)? ;
+   */
+  private ternary(): Expr {
+    let expr = this.equality();
+
+    if (this.match(TokenType.QUESTION)) {
+      const thenExpr = this.expression();
+      this.consume(TokenType.COLON, ": expected after then expression");
+      const elseExpr = this.ternary();
+      expr = new Ternary(expr, thenExpr, elseExpr);
     }
 
     return expr;

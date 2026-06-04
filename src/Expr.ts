@@ -7,7 +7,8 @@
  * expression -> literal
                | unary
                | binary
-               | grouping ;
+               | grouping
+               | ternary ;
 
  * We want to convert this into code now. Remember, the point of our parser is we have the stream of tokens
  * which are the sequence of terminal and non-terminal symbols in syntactic grammar; and we want to derive the final sequence of terminal "letters" via the grammar rules.
@@ -28,6 +29,7 @@ export interface Visitor<R> {
   visitGroupingExpr(expr: Grouping): R;
   visitLiteralExpr(expr: Literal): R;
   visitUnaryExpr(expr: Unary): R;
+  visitTernaryExpr(expr: Ternary): R;
 }
 
 // Visitor pattern, double dispatch.
@@ -100,5 +102,24 @@ export class Unary extends Expr {
 
   accept<R>(visitor: Visitor<R>): R {
     return visitor.visitUnaryExpr(this);
+  }
+}
+
+/**
+ * Ternary production rule:
+ *
+ * equality -> equality "?" equality ":" equality ;
+ */
+export class Ternary extends Expr {
+  constructor(
+    readonly condition: Expr,
+    readonly thenBranch: Expr,
+    readonly elseBranch: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {
+    return visitor.visitTernaryExpr(this);
   }
 }

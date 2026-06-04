@@ -16,7 +16,7 @@ describe("Parser & AstPrinter Integration", () => {
     // Multiplication binds tighter than addition
     expect(parseAndPrint("1 + 2 * 3")).toBe("(+ 1 (* 2 3))");
     expect(parseAndPrint("1 * 2 + 3")).toBe("(+ (* 1 2) 3)");
-    
+
     // Division binds tighter than subtraction
     expect(parseAndPrint("4 - 6 / 2")).toBe("(- 4 (/ 6 2))");
   });
@@ -45,7 +45,7 @@ describe("Parser & AstPrinter Integration", () => {
     expect(parseAndPrint("1 < 2")).toBe("(< 1 2)");
     expect(parseAndPrint("1 <= 2 >= 3")).toBe("(>= (<= 1 2) 3)");
     expect(parseAndPrint("1 == 2 != 3")).toBe("(!= (== 1 2) 3)");
-    
+
     // Comparisons have higher precedence than equality
     expect(parseAndPrint("1 + 2 == 3")).toBe("(== (+ 1 2) 3)");
     expect(parseAndPrint("1 == 2 < 3")).toBe("(== 1 (< 2 3))");
@@ -62,8 +62,19 @@ describe("Parser & AstPrinter Integration", () => {
   it("parses comma operator correctly (lowest precedence, left-associative)", () => {
     // 1, 2, 3 should group as ((1, 2), 3)
     expect(parseAndPrint("1, 2, 3")).toBe("(, (, 1 2) 3)");
-    
+
     // Comma has lower precedence than addition and multiplication
     expect(parseAndPrint("1 + 2, 3 * 4")).toBe("(, (+ 1 2) (* 3 4))");
+  });
+
+  it("parses ternary operator correctly", () => {
+    // Basic ternary
+    expect(parseAndPrint("1 ? 2 : 3")).toBe("(? 1 2 3)");
+
+    // Precedence: Equality binds tighter than ternary
+    expect(parseAndPrint("1 == 2 ? 3 : 4")).toBe("(? (== 1 2) 3 4)");
+
+    // Right-associativity: a ? b : c ? d : e parses as a ? b : (c ? d : e)
+    expect(parseAndPrint("1 ? 2 : 3 ? 4 : 5")).toBe("(? 1 2 (? 3 4 5))");
   });
 });

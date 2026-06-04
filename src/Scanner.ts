@@ -37,7 +37,7 @@ export class Scanner {
   /**  */
   private line = 1;
 
-  constructor(private readonly source: string) {}
+  constructor(private readonly source: string) { }
 
   scanTokens() {
     while (!this.isAtEnd()) {
@@ -75,6 +75,12 @@ export class Scanner {
   private scanToken() {
     const c = this.advance();
     switch (c) {
+      case "?":
+        this.addToken(TokenType.QUESTION);
+        break;
+      case ":":
+        this.addToken(TokenType.COLON);
+        break;
       case "(":
         this.addToken(TokenType.LEFT_PAREN);
         break;
