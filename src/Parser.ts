@@ -18,24 +18,23 @@ class ParseError extends Error {
  * 
  * ```
  *  expression     → comma ;
-    comma          → ternary ( "," ternary)* ;
-    ternary        → equality ( "?" expression ":" ternary)? ;
-    equality       → comparison ( ( "!=" | "==" ) comparison )* ;
-    comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
-    term           → factor ( ( "-" | "+" ) factor )* ;
-    factor         → unary ( ( "/" | "*" ) unary )* ;
-    unary          → ( "!" | "-" ) unary
-                   | primary ;
-    primary        → NUMBER | STRING | "true" | "false" | "nil"
-                   | "(" expression ")" ;
-                   // Error production rules - missing left hand side operand
-                   | ( "!=" | "==" ) equality
-                   | ( ">" | ">=" | "<" | "<=" ) comparison
-                   | ( "+" ) term 
-                   | ( "/" | "*" ) factor ;
-
-
-   ```
+ *  comma          → ternary ( "," ternary)* ;
+ *  ternary        → equality ( "?" expression ":" ternary)? ;
+ *  equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+ *  comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+ *  term           → factor ( ( "-" | "+" ) factor )* ;
+ *  factor         → unary ( ( "/" | "*" ) unary )* ;
+ *  unary          → ( "!" | "-" ) unary
+ *                 | primary ;
+ *  primary        → NUMBER | STRING | "true" | "false" | "nil"
+ *                 | "(" expression ")" ;
+ *                 // Error production rules - missing left hand side operand
+ *                 | ( "!=" | "==" ) equality
+ *                 | ( ">" | ">=" | "<" | "<=" ) comparison
+ *                 | ( "+" ) term 
+ *                 | ( "/" | "*" ) factor ;
+ *
+ *  ```
  * 
  * For the error production rules, we want to error when the left hand side operand is missing for the binary expressions
  * We also want to continue consuming the rest of the expressions.
