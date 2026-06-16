@@ -31,7 +31,7 @@ export class AstPrinter implements Visitor<string> {
   }
 
   visitTernaryExpr(expr: Ternary): string {
-    return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch)
+    return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch);
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {

@@ -15,7 +15,7 @@ class ParseError extends Error {
  * since the associativity and precedence is captured by the shape of the tree.
  *
  * Each grammar rule becomes a method inside this class
- * 
+ *
  * ```
  *  expression     → comma ;
  *  comma          → ternary ( "," ternary)* ;
@@ -31,11 +31,11 @@ class ParseError extends Error {
  *                 // Error production rules - missing left hand side operand
  *                 | ( "!=" | "==" ) equality
  *                 | ( ">" | ">=" | "<" | "<=" ) comparison
- *                 | ( "+" ) term 
+ *                 | ( "+" ) term
  *                 | ( "/" | "*" ) factor ;
  *
  *  ```
- * 
+ *
  * For the error production rules, we want to error when the left hand side operand is missing for the binary expressions
  * We also want to continue consuming the rest of the expressions.
  *
@@ -45,7 +45,7 @@ class ParseError extends Error {
 export class Parser {
   private current = 0;
 
-  constructor(readonly tokens: Token[]) { }
+  constructor(readonly tokens: Token[]) {}
 
   /**
    * Entrypoint to run the parser on the tokens
@@ -200,10 +200,12 @@ export class Parser {
     if (this.match(TokenType.BANG_EQUAL, TokenType.EQUAL_EQUAL)) {
       this.error(this.previous(), "Missing left-hand operand.");
       this.equality();
-      return new Literal(null)
+      return new Literal(null);
     }
 
-    if (this.match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)) {
+    if (
+      this.match(TokenType.GREATER, TokenType.GREATER_EQUAL, TokenType.LESS, TokenType.LESS_EQUAL)
+    ) {
       this.error(this.previous(), "Missing left-hand operand.");
       this.comparison();
       return new Literal(null);

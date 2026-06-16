@@ -6,9 +6,13 @@ import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 import { Parser } from "./Parser.js";
 import { AstPrinter } from "./AstPrinter.js";
+import type { RuntimeError } from "./RuntimeError.js";
+import { Interpreter } from "./Interpreter.js";
 
 export class Lox {
+  private static interpreter: Interpreter = new Interpreter();
   static hadError = false;
+  static hadRuntimeError = false;
 
   static async main(args: string[]): Promise<void> {
     if (args.length > 1) {
@@ -28,6 +32,9 @@ export class Lox {
 
       if (Lox.hadError) {
         process.exit(65);
+      }
+      if (Lox.hadRuntimeError) {
+        process.exit(70);
       }
     } catch (error: any) {
       console.error(`Error reading file: ${error.message}`);
@@ -60,11 +67,16 @@ export class Lox {
 
     if (!expression || this.hadError) return;
 
-    console.log(new AstPrinter().print(expression));
+    this.interpreter.interpret(expression);
   }
 
   static error(line: number, message: string): void {
     Lox.report(line, "", message);
+  }
+
+  static runtimeError(error: RuntimeError): void {
+    console.log(error.message + "\n[line " + error.token.line + "]");
+    this.hadRuntimeError = true;
   }
 
   private static report(line: number, where: string, message: string): void {

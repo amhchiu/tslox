@@ -37,7 +37,7 @@ export class Scanner {
   /**  */
   private line = 1;
 
-  constructor(private readonly source: string) { }
+  constructor(private readonly source: string) {}
 
   scanTokens() {
     while (!this.isAtEnd()) {

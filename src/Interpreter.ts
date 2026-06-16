@@ -1,9 +1,25 @@
 import { Binary, Expr, Grouping, Literal, Ternary, Unary, type Visitor } from "./Expr.js";
+import { Lox } from "./Lox.js";
+import { RuntimeError } from "./RuntimeError.js";
+import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 type LoxValue = string | number | boolean | null;
 
 export class Interpreter implements Visitor<LoxValue> {
+  interpret(expression: Expr) {
+    try {
+      const value: LoxValue = this.evaluate(expression);
+      console.log(this.stringify(value));
+    } catch (err) {
+      if (err instanceof RuntimeError) {
+        Lox.runtimeError(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
   visitBinaryExpr(expr: Binary): LoxValue {
     // postorder, left right root
     const left = this.evaluate(expr.left);
@@ -12,12 +28,16 @@ export class Interpreter implements Visitor<LoxValue> {
     switch (expr.operator.type) {
       // comparison operations
       case TokenType.GREATER:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) > Number(right);
       case TokenType.GREATER_EQUAL:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) >= Number(right);
       case TokenType.LESS:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) < Number(right);
       case TokenType.LESS_EQUAL:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) <= Number(right);
       // equality
       case TokenType.BANG_EQUAL:
@@ -26,19 +46,23 @@ export class Interpreter implements Visitor<LoxValue> {
         return this.isEqual(left, right);
       // arithmetic operations
       case TokenType.MINUS:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) - Number(right);
       case TokenType.SLASH:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) / Number(right);
       case TokenType.STAR:
+        this.checkNumberOperands(expr.operator, left, right);
         return Number(left) * Number(right);
       case TokenType.PLUS:
-        if (typeof left === 'number' && typeof right === 'number') {
+        if (typeof left === "number" && typeof right === "number") {
           return left + right;
         }
-        if (typeof left === 'string' && typeof right === 'string') {
-          return left.concat(right);
+        if (typeof left === "string" || typeof right === "string") {
+          return String(left).concat(String(right));
         }
-        break;
+        // throw error if neither cases match
+        throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
       // other operators
       case TokenType.COMMA:
         return right;
@@ -48,20 +72,21 @@ export class Interpreter implements Visitor<LoxValue> {
   }
   visitGroupingExpr(expr: Grouping): LoxValue {
     // evaluate the expression in the group
-    return this.evaluate(expr.expression)
+    return this.evaluate(expr.expression);
   }
   visitLiteralExpr(expr: Literal): LoxValue {
     return expr.value;
   }
   /**
-    * evaluate expression then apply unary operator on the value
-    */
+   * evaluate expression then apply unary operator on the value
+   */
   visitUnaryExpr(expr: Unary): LoxValue {
     const right = this.evaluate(expr.right);
 
     switch (expr.operator.type) {
       case TokenType.MINUS:
         // TODO handle dynamic runtime error if not castable, because lox is dynamically typed language
+        this.checkNumberOperand(expr.operator, right);
         return -Number(right);
       case TokenType.BANG:
         return !this.isTruthy(right);
@@ -70,9 +95,22 @@ export class Interpreter implements Visitor<LoxValue> {
     return null;
   }
 
+  private checkNumberOperand(operator: Token, operand: LoxValue) {
+    if (typeof operand === "number") {
+      return;
+    }
+    throw new RuntimeError(operator, "Operand must be a number");
+  }
+
+  private checkNumberOperands(operator: Token, left: LoxValue, right: LoxValue) {
+    if (typeof left === "number" && typeof right == "number") return;
+
+    throw new RuntimeError(operator, "Operands must be numbers.");
+  }
+
   private isTruthy(value: LoxValue): boolean {
     if (value === null) return false;
-    if (typeof value === 'boolean') return value;
+    if (typeof value === "boolean") return value;
     return true;
   }
 
@@ -80,12 +118,17 @@ export class Interpreter implements Visitor<LoxValue> {
     return a === b;
   }
 
+  private stringify(value: LoxValue) {
+    if (value === null) return "nil";
+    return String(value);
+  }
+
   visitTernaryExpr(expr: Ternary): LoxValue {
     const condition = this.evaluate(expr.condition);
     if (this.isTruthy(condition)) {
-      return this.evaluate(expr.thenBranch)
+      return this.evaluate(expr.thenBranch);
     } else {
-      return this.evaluate(expr.elseBranch)
+      return this.evaluate(expr.elseBranch);
     }
   }
 
