@@ -21,11 +21,16 @@ describe("Interpreter Integration Tests", () => {
   });
 
   function run(source: string) {
-    const scanner = new Scanner(source);
+    const cleanedSource = source.trim();
+    const hasStatementKeyword = cleanedSource.startsWith("print ") || cleanedSource.startsWith("var ");
+    const finalSource = hasStatementKeyword
+      ? (cleanedSource.endsWith(";") ? cleanedSource : `${cleanedSource};`)
+      : `print ${cleanedSource};`;
+
+    const scanner = new Scanner(finalSource);
     const parser = new Parser(scanner.scanTokens());
-    const expression = parser.parse();
-    if (!expression) throw new Error(`Failed to parse: "${source}"`);
-    interpreter.interpret(expression);
+    const statements = parser.parse();
+    interpreter.interpret(statements);
   }
 
   it("evaluates literals correctly", () => {
@@ -64,6 +69,17 @@ describe("Interpreter Integration Tests", () => {
   it("evaluates string concatenation correctly", () => {
     run('"hello " + "world"');
     expect(logSpy).toHaveBeenCalledWith("hello world");
+
+    // Implicit string conversion (Chapter 7 Challenge)
+    logSpy.mockClear();
+    run('2 + "hello"');
+    expect(logSpy).toHaveBeenCalledWith("2hello");
+    expect(Lox.hadRuntimeError).toBe(false);
+
+    logSpy.mockClear();
+    run('"hello" + 2');
+    expect(logSpy).toHaveBeenCalledWith("hello2");
+    expect(Lox.hadRuntimeError).toBe(false);
   });
 
   it("evaluates comparisons and equality correctly", () => {
@@ -94,16 +110,7 @@ describe("Interpreter Integration Tests", () => {
   });
 
   it("detects and reports runtime errors", () => {
-    // Adding numbers and strings is a runtime error in Lox
-    run('2 + "hello"');
-    expect(Lox.hadRuntimeError).toBe(true);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Operands must be two numbers or two strings."),
-    );
-
     // Negating a non-number is a runtime error
-    logSpy.mockClear();
-    Lox.hadRuntimeError = false;
     run('-"hello"');
     expect(Lox.hadRuntimeError).toBe(true);
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Operand must be a number"));

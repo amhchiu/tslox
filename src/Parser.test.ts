@@ -3,13 +3,22 @@ import { Scanner } from "./Scanner.js";
 import { Parser } from "./Parser.js";
 import { AstPrinter } from "./AstPrinter.js";
 import { Lox } from "./Lox.js";
+import { Expression } from "./Stmt.js";
 
 function parseAndPrint(source: string): string {
-  const scanner = new Scanner(source);
+  const cleanedSource = source.endsWith(";") ? source : `${source};`;
+  const scanner = new Scanner(cleanedSource);
   const parser = new Parser(scanner.scanTokens());
-  const expression = parser.parse();
-  if (!expression) throw new Error(`Failed to parse expression: "${source}"`);
-  return new AstPrinter().print(expression);
+  const statements = parser.parse();
+  
+  if (statements.length === 0) throw new Error(`Failed to parse expression: "${source}"`);
+  const firstStmt = statements[0]!;
+
+  if (firstStmt instanceof Expression) {
+    return new AstPrinter().print(firstStmt.expression);
+  }
+
+  throw new Error(`First statement is not an expression statement: "${source}"`);
 }
 
 describe("Parser & AstPrinter Integration", () => {

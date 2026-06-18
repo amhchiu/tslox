@@ -63,11 +63,11 @@ export class Lox {
     const tokens: Token[] = scanner.scanTokens();
 
     const parser = new Parser(tokens);
-    const expression = parser.parse();
+    const statements = parser.parse();
 
-    if (!expression || this.hadError) return;
+    if (!statements || this.hadError) return;
 
-    this.interpreter.interpret(expression);
+    this.interpreter.interpret(statements);
   }
 
   static error(line: number, message: string): void {

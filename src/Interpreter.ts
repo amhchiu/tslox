@@ -1,16 +1,30 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary, type Visitor } from "./Expr.js";
+import { Binary, Expr, Grouping, Literal, Ternary, Unary, type Visitor as ExprVisitor } from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { RuntimeError } from "./RuntimeError.js";
+import type { Expression, Print, Stmt, Visitor as StmtVisitor } from "./Stmt.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 type LoxValue = string | number | boolean | null;
 
-export class Interpreter implements Visitor<LoxValue> {
-  interpret(expression: Expr) {
+export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue> {
+
+  visitExpressionStmt(stmt: Expression): LoxValue {
+    this.evaluate(stmt.expression)
+    return null;
+  }
+
+  visitPrintStmt(stmt: Print): LoxValue {
+    const value = this.evaluate(stmt.expression)
+    console.log(this.stringify(value));
+    return null;
+  }
+
+  interpret(statements: Array<Stmt>) {
     try {
-      const value: LoxValue = this.evaluate(expression);
-      console.log(this.stringify(value));
+      for(const statement of statements) {
+        this.execute(statement); 
+      }
     } catch (err) {
       if (err instanceof RuntimeError) {
         Lox.runtimeError(err);
@@ -135,5 +149,9 @@ export class Interpreter implements Visitor<LoxValue> {
   private evaluate(expr: Expr): LoxValue {
     // evaluate itself
     return expr.accept(this);
+  }
+
+  private execute(statement: Stmt) {
+    statement.accept(this);
   }
 }
