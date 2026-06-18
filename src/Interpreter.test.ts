@@ -98,7 +98,7 @@ describe("Interpreter Integration Tests", () => {
     run('2 + "hello"');
     expect(Lox.hadRuntimeError).toBe(true);
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Operands must be two numbers or two strings.")
+      expect.stringContaining("Operands must be two numbers or two strings."),
     );
 
     // Negating a non-number is a runtime error
@@ -106,8 +106,6 @@ describe("Interpreter Integration Tests", () => {
     Lox.hadRuntimeError = false;
     run('-"hello"');
     expect(Lox.hadRuntimeError).toBe(true);
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Operand must be a number")
-    );
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Operand must be a number"));
   });
 });

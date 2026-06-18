@@ -1,6 +1,7 @@
 import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import type { Token } from "./Token.js";
+import { Expression, Print, Stmt } from "./Stmt.js";
+import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 class ParseError extends Error {
@@ -17,6 +18,11 @@ class ParseError extends Error {
  * Each grammar rule becomes a method inside this class
  *
  * ```
+ *  program        → statement* EOF ;
+ *  statement      → exprStmt | printStmt ;
+ *  exprStmt       → expression ";" ;
+ *  printstmt      → "print" expression ";" ;
+ *
  *  expression     → comma ;
  *  comma          → ternary ( "," ternary)* ;
  *  ternary        → equality ( "?" expression ":" ternary)? ;
@@ -53,20 +59,43 @@ export class Parser {
    * @returns successfully parsed expression or null if syntax error
    */
   public parse() {
-    try {
-      return this.expression();
-    } catch (error) {
-      if (error instanceof ParseError) {
-        return null;
-      }
-      throw error;
+    const statements = new Array<Stmt>();
+    while (!this.isAtEnd()) {
+      statements.push(this.statement());
     }
+    return statements;
+  }
+
+  /**
+   * statement -> exprStmt | printStmt ;
+   */
+  private statement(): Stmt {
+    if (this.match(TokenType.PRINT)) return this.printStatement();
+    return this.expressionStatement();
+  }
+
+  /**
+   * printstmt -> "print" expression ";" ;
+   */
+  private printStatement(): Stmt {
+    const expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after value");
+    return new Print(expr);
+  }
+
+  /**
+   * expressionStmt -> expression ";" ;
+   */
+  private expressionStatement(): Stmt {
+    const expr = this.expression();
+    this.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+    return new Expression(expr);
   }
 
   /**
    * expression -> equality
    */
-  private expression() {
+  private expression(): Expr {
     return this.comma();
   }
 
