@@ -1,6 +1,6 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary } from "./Expr.js";
+import { Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import { Expression, Print, Stmt } from "./Stmt.js";
+import { Expression, Print, Stmt, Var } from "./Stmt.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -18,9 +18,11 @@ class ParseError extends Error {
  * Each grammar rule becomes a method inside this class
  *
  * ```
- *  program        → statement* EOF ;
+ *  program        → declaration* EOF ;                     // A program is a list of declarations
+ *  declaration    → varDecl | statement ;                  // Declare variables, functions and classes and statements
+ *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
  *  statement      → exprStmt | printStmt ;
- *  exprStmt       → expression ";" ;
+ *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  printstmt      → "print" expression ";" ;
  *
  *  expression     → comma ;
@@ -33,7 +35,8 @@ class ParseError extends Error {
  *  unary          → ( "!" | "-" ) unary
  *                 | primary ;
  *  primary        → NUMBER | STRING | "true" | "false" | "nil"
- *                 | "(" expression ")" ;
+ *                 | "(" expression ")"
+ *                 | IDENTIFIER ;
  *                 // Error production rules - missing left hand side operand
  *                 | ( "!=" | "==" ) equality
  *                 | ( ">" | ">=" | "<" | "<=" ) comparison
@@ -61,9 +64,36 @@ export class Parser {
   public parse() {
     const statements = new Array<Stmt>();
     while (!this.isAtEnd()) {
-      statements.push(this.statement());
+      const decl = this.declaration();
+      if (decl !== null) {
+        statements.push(decl);
+      }
     }
     return statements;
+  }
+
+  /**
+   * declaration → varDecl | statement ;
+   */
+  private declaration() {
+    try {
+      if (this.match(TokenType.VAR)) return this.varDeclaration();
+      return this.statement();
+    } catch (err) {
+      // Parser parses series of declarations. When ParseError is caught, we want to synchronise and continue on the next statement
+      this.synchronize();
+      return null;
+    }
+  }
+
+  /**
+   * varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
+   */
+  private varDeclaration(): Stmt {
+    const name = this.consume(TokenType.IDENTIFIER, "Expected variable name");
+    const initializer = this.match(TokenType.EQUAL) ? this.expression() : null;
+    this.consume(TokenType.SEMICOLON, "Expect ';' after value");
+    return new Var(name, initializer);
   }
 
   /**
@@ -208,7 +238,12 @@ export class Parser {
 
   /**
    * primary → NUMBER | STRING | "true" | "false" | "nil" 
-                | "(" expression ")" ;
+    * | "(" expression ")"
+    * | IDENTIFIER ;
+    *
+    *
+    *
+                
    */
   private primary(): Expr {
     if (this.match(TokenType.FALSE)) return new Literal(false);
@@ -217,6 +252,10 @@ export class Parser {
 
     if (this.match(TokenType.NUMBER, TokenType.STRING)) {
       return new Literal(this.previous().literal);
+    }
+
+    if (this.match(TokenType.IDENTIFIER)) {
+      return new Variable(this.previous());
     }
 
     if (this.match(TokenType.LEFT_PAREN)) {

@@ -22,9 +22,12 @@ describe("Interpreter Integration Tests", () => {
 
   function run(source: string) {
     const cleanedSource = source.trim();
-    const hasStatementKeyword = cleanedSource.startsWith("print ") || cleanedSource.startsWith("var ");
+    const hasStatementKeyword =
+      cleanedSource.startsWith("print ") || cleanedSource.startsWith("var ");
     const finalSource = hasStatementKeyword
-      ? (cleanedSource.endsWith(";") ? cleanedSource : `${cleanedSource};`)
+      ? cleanedSource.endsWith(";")
+        ? cleanedSource
+        : `${cleanedSource};`
       : `print ${cleanedSource};`;
 
     const scanner = new Scanner(finalSource);

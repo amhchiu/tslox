@@ -6,6 +6,7 @@ import {
   type Literal,
   type Unary,
   Ternary,
+  Variable,
 } from "./Expr.js";
 
 export class AstPrinter implements Visitor<string> {
@@ -32,6 +33,10 @@ export class AstPrinter implements Visitor<string> {
 
   visitTernaryExpr(expr: Ternary): string {
     return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch);
+  }
+
+  visitVariableExpr(expr: Variable): string {
+    return expr.name.lexeme
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {

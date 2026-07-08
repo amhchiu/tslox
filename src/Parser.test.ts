@@ -10,7 +10,7 @@ function parseAndPrint(source: string): string {
   const scanner = new Scanner(cleanedSource);
   const parser = new Parser(scanner.scanTokens());
   const statements = parser.parse();
-  
+
   if (statements.length === 0) throw new Error(`Failed to parse expression: "${source}"`);
   const firstStmt = statements[0]!;
 

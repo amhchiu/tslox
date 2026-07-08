@@ -30,6 +30,7 @@ export interface Visitor<R> {
   visitLiteralExpr(expr: Literal): R;
   visitUnaryExpr(expr: Unary): R;
   visitTernaryExpr(expr: Ternary): R;
+  visitVariableExpr(expr: Variable): R;
 }
 
 // Visitor pattern, double dispatch.
@@ -121,5 +122,20 @@ export class Ternary extends Expr {
 
   accept<R>(visitor: Visitor<R>): R {
     return visitor.visitTernaryExpr(this);
+  }
+}
+
+/**
+ * Node for use in primary production rule
+ *
+ * primary -> ... | IDENTIFIER ;
+ */
+export class Variable extends Expr {
+  constructor(readonly name: Token) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {
+    return visitor.visitVariableExpr(this);
   }
 }

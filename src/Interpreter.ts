@@ -1,29 +1,49 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary, type Visitor as ExprVisitor } from "./Expr.js";
+import { Environment } from "./Environments.js";
+import {
+  Binary,
+  Expr,
+  Grouping,
+  Literal,
+  Ternary,
+  Unary,
+  Variable,
+  type Visitor as ExprVisitor,
+} from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { RuntimeError } from "./RuntimeError.js";
-import type { Expression, Print, Stmt, Visitor as StmtVisitor } from "./Stmt.js";
+import type { Expression, Print, Stmt, Visitor as StmtVisitor, Var as VarStmt } from "./Stmt.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
-type LoxValue = string | number | boolean | null;
+export type LoxValue = string | number | boolean | null;
 
 export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue> {
+  private environment = new Environment();
 
   visitExpressionStmt(stmt: Expression): LoxValue {
-    this.evaluate(stmt.expression)
+    this.evaluate(stmt.expression);
     return null;
   }
 
   visitPrintStmt(stmt: Print): LoxValue {
-    const value = this.evaluate(stmt.expression)
+    const value = this.evaluate(stmt.expression);
     console.log(this.stringify(value));
+    return null;
+  }
+
+  visitVarStmt(stmt: VarStmt): LoxValue {
+    let value: LoxValue = null;
+    if (stmt.initializer !== null) {
+      value = this.evaluate(stmt.initializer);
+    }
+    this.environment.define(stmt.name.lexeme, value);
     return null;
   }
 
   interpret(statements: Array<Stmt>) {
     try {
-      for(const statement of statements) {
-        this.execute(statement); 
+      for (const statement of statements) {
+        this.execute(statement);
       }
     } catch (err) {
       if (err instanceof RuntimeError) {
@@ -32,6 +52,10 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
         throw err;
       }
     }
+  }
+
+  visitVariableExpr(expr: Variable): LoxValue {
+    return this.environment.get(expr.name);
   }
 
   visitBinaryExpr(expr: Binary): LoxValue {
@@ -84,13 +108,16 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
 
     return null;
   }
+
   visitGroupingExpr(expr: Grouping): LoxValue {
     // evaluate the expression in the group
     return this.evaluate(expr.expression);
   }
+
   visitLiteralExpr(expr: Literal): LoxValue {
     return expr.value;
   }
+
   /**
    * evaluate expression then apply unary operator on the value
    */
