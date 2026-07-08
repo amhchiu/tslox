@@ -52,8 +52,6 @@ We have built the the Scanner class. This takes the source code, iterates throug
 
 We have defined the grammar rules of our language and implemented the expression rule as classes using the visitor pattern.
 
-https://craftinginterpreters.com/representing-code.html
-
 Next: This list of tokens will feed into the Parser, which builds the abstract syntax tree.
 
 ```

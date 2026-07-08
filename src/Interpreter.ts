@@ -1,5 +1,6 @@
 import { Environment } from "./Environments.js";
 import {
+  Assign,
   Binary,
   Expr,
   Grouping,
@@ -38,6 +39,12 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
     }
     this.environment.define(stmt.name.lexeme, value);
     return null;
+  }
+
+  visitAssignExpr(expr: Assign): LoxValue {
+    const value = this.evaluate(expr.value);
+    this.environment.assign(expr.name, value);
+    return value;
   }
 
   interpret(statements: Array<Stmt>) {

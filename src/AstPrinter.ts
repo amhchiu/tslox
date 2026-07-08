@@ -7,6 +7,7 @@ import {
   type Unary,
   Ternary,
   Variable,
+  Assign,
 } from "./Expr.js";
 
 export class AstPrinter implements Visitor<string> {
@@ -36,7 +37,12 @@ export class AstPrinter implements Visitor<string> {
   }
 
   visitVariableExpr(expr: Variable): string {
-    return expr.name.lexeme
+    return expr.name.lexeme;
+  }
+
+  visitAssignExpr(expr: Assign): string {
+    // a = 5 -> lisp like prefix notation (= a 5)
+    return this.parenthesize(`= ${expr.name.lexeme}`, expr.value) 
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {

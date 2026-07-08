@@ -1,4 +1,4 @@
-import { Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
+import { Assign, Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { Expression, Print, Stmt, Var } from "./Stmt.js";
 import { Token } from "./Token.js";
@@ -26,7 +26,8 @@ class ParseError extends Error {
  *  printstmt      → "print" expression ";" ;
  *
  *  expression     → comma ;
- *  comma          → ternary ( "," ternary)* ;
+ *  comma          → assignment ( "," assignment )* ;
+ *  assignment     → IDENTIFIER "=" assignment | ternary ;
  *  ternary        → equality ( "?" expression ":" ternary)? ;
  *  equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  *  comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -79,7 +80,7 @@ export class Parser {
     try {
       if (this.match(TokenType.VAR)) return this.varDeclaration();
       return this.statement();
-    } catch (err) {
+    } catch {
       // Parser parses series of declarations. When ParseError is caught, we want to synchronise and continue on the next statement
       this.synchronize();
       return null;
@@ -130,15 +131,37 @@ export class Parser {
   }
 
   /**
-   * comma → ternary ( "," ternary)* ;
+   * comma → assignment ( "," assignment )* ;
    */
   private comma(): Expr {
-    let expr = this.ternary();
+    let expr = this.assignment();
 
     while (this.match(TokenType.COMMA)) {
       const operator = this.previous();
-      const right = this.ternary();
+      const right = this.assignment();
       expr = new Binary(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  /**
+   * assignment → IDENTIFIER "=" assignment | ternary ;
+   */
+  private assignment(): Expr {
+    const expr = this.ternary();
+
+    if (this.match(TokenType.EQUAL)) {
+      const equals = this.previous();
+      const value = this.assignment();
+
+      // Only assign valid variable targets, e.g. not 3 = 4;
+      if (expr instanceof Variable) {
+        const name = expr.name;
+        return new Assign(name, value);
+      }
+
+      this.error(equals, "Invalid assignment target");
     }
 
     return expr;

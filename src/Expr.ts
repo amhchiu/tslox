@@ -25,6 +25,7 @@ import type { Token, TokenLiteral } from "./Token.js";
 
 // e.g Interpreter or ASTPrinter.
 export interface Visitor<R> {
+  visitAssignExpr(expr: Assign): R;
   visitBinaryExpr(expr: Binary): R;
   visitGroupingExpr(expr: Grouping): R;
   visitLiteralExpr(expr: Literal): R;
@@ -137,5 +138,23 @@ export class Variable extends Expr {
 
   accept<R>(visitor: Visitor<R>): R {
     return visitor.visitVariableExpr(this);
+  }
+}
+
+/**
+ * Assignment production rule:
+ *
+ * assignment -> IDENTIFIER "=" assignment | ternary ;
+ */
+export class Assign extends Expr {
+  constructor(
+    readonly name: Token,
+    readonly value: Expr,
+  ) {
+    super();
+  }
+
+  accept<R>(visitor: Visitor<R>): R {
+    return visitor.visitAssignExpr(this);
   }
 }

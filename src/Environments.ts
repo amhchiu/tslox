@@ -9,6 +9,15 @@ export class Environment {
     this.values.set(name, value);
   }
 
+  assign(name: Token, value: LoxValue) {
+    if (this.values.has(name.lexeme)) {
+      this.values.set(name.lexeme, value);
+      return;
+    }
+
+    throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
+  }
+
   get(name: Token): LoxValue {
     const found = this.values.get(name.lexeme);
     if (found) {
