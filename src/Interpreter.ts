@@ -12,7 +12,7 @@ import {
 } from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { RuntimeError } from "./RuntimeError.js";
-import type { Expression, Print, Stmt, Visitor as StmtVisitor, Var as VarStmt } from "./Stmt.js";
+import type { Block, Expression, Print, Stmt, Visitor as StmtVisitor, VarDecl } from "./Stmt.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -32,7 +32,7 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
     return null;
   }
 
-  visitVarStmt(stmt: VarStmt): LoxValue {
+  visitVarStmt(stmt: VarDecl): LoxValue {
     let value: LoxValue = null;
     if (stmt.initializer !== null) {
       value = this.evaluate(stmt.initializer);
@@ -187,5 +187,23 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
 
   private execute(statement: Stmt) {
     statement.accept(this);
+  }
+
+  visitBlockStmt(stmt: Block): null {
+    this.executeBlock(stmt.statements, new Environment(this.environment));
+    return null;
+  }
+
+  executeBlock(statements: Stmt[], environment: Environment) {
+    const previous = this.environment;
+    try {
+      this.environment = environment;
+
+      for (const statement of statements) {
+        this.execute(statement);
+      }
+    } finally {
+      this.environment = previous;
+    }
   }
 }

@@ -39,7 +39,7 @@ export class Scanner {
 
   constructor(private readonly source: string) {}
 
-  scanTokens() {
+  scanTokens(): Token[] {
     while (!this.isAtEnd()) {
       // We are at the beginning of the next lexeme
       this.start = this.current;

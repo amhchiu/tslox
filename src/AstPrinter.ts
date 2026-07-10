@@ -42,7 +42,7 @@ export class AstPrinter implements Visitor<string> {
 
   visitAssignExpr(expr: Assign): string {
     // a = 5 -> lisp like prefix notation (= a 5)
-    return this.parenthesize(`= ${expr.name.lexeme}`, expr.value) 
+    return this.parenthesize(`= ${expr.name.lexeme}`, expr.value);
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {

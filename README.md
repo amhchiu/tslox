@@ -100,3 +100,5 @@ We have successfully built the front-end parser and the core execution engine of
 ### Next Step
 
 Implementing **Environments** in Chapter 8 to store variable bindings and enable stateful execution.
+
+https://craftinginterpreters.com/statements-and-state.html#scope
