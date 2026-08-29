@@ -1,54 +1,42 @@
-import {
-  Expr,
-  type Visitor,
-  type Binary,
-  type Grouping,
-  type Literal,
-  type Unary,
-  Ternary,
-  Variable,
-  Assign,
-} from "./Expr.js";
+import type { Expr } from "./Expr.js";
 
-export class AstPrinter implements Visitor<string> {
+export class AstPrinter {
   print(expr: Expr): string {
-    return expr.accept(this);
-  }
+    switch (expr.kind) {
+      case "Binary":
+        return this.parenthesize(expr.operator.lexeme, expr.left, expr.right);
 
-  visitBinaryExpr(expr: Binary): string {
-    return this.parenthesize(expr.operator.lexeme, expr.left, expr.right);
-  }
+      case "Grouping":
+        return this.parenthesize("group", expr.expression);
 
-  visitGroupingExpr(expr: Grouping): string {
-    return this.parenthesize("group", expr.expression);
-  }
+      case "Literal":
+        if (expr.value === null) return "nil";
+        return String(expr.value);
 
-  visitLiteralExpr(expr: Literal): string {
-    if (expr.value === null) return "nil";
-    return String(expr.value);
-  }
+      case "Unary":
+        return this.parenthesize(expr.operator.lexeme, expr.right);
 
-  visitUnaryExpr(expr: Unary): string {
-    return this.parenthesize(expr.operator.lexeme, expr.right);
-  }
+      case "Ternary":
+        return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch);
 
-  visitTernaryExpr(expr: Ternary): string {
-    return this.parenthesize("?", expr.condition, expr.thenBranch, expr.elseBranch);
-  }
+      case "Variable":
+        return expr.name.lexeme;
 
-  visitVariableExpr(expr: Variable): string {
-    return expr.name.lexeme;
-  }
+      case "Assign":
+        // a = 5 -> lisp like prefix notation (= a 5)
+        return this.parenthesize(`= ${expr.name.lexeme}`, expr.value);
 
-  visitAssignExpr(expr: Assign): string {
-    // a = 5 -> lisp like prefix notation (= a 5)
-    return this.parenthesize(`= ${expr.name.lexeme}`, expr.value);
+      default: {
+        const _exhaustiveCheck: never = expr;
+        throw new Error(`Unhandled expression kind: ${JSON.stringify(_exhaustiveCheck)}`);
+      }
+    }
   }
 
   private parenthesize(name: string, ...exprs: Expr[]): string {
     let result = `(${name}`;
     for (const expr of exprs) {
-      result += ` ${expr.accept(this)}`;
+      result += ` ${this.print(expr)}`;
     }
     result += ")";
     return result;

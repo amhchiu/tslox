@@ -9,54 +9,28 @@
                | binary
                | grouping
                | ternary ;
-
+ *
  * We want to convert this into code now. Remember, the point of our parser is we have the stream of tokens
  * which are the sequence of terminal and non-terminal symbols in syntactic grammar; and we want to derive the final sequence of terminal "letters" via the grammar rules.
  *
- * As code, we implement this via the Visitor pattern (but can be implemented other ways).
- *
- * The left side of the BNF notation (non-terminal head) is the class we implement.
- *
- * The right side of the BNF notation (body) represents the derivation, which is the combination of terminal and non-terminal symbols. These are the properties of the class that can be visited.
- * 
+ * This is implemented using a functional style with tagged (discriminated) unions and switch-case pattern matching.
  */
 
 import type { Token, TokenLiteral } from "./Token.js";
-
-// e.g Interpreter or ASTPrinter.
-export interface Visitor<R> {
-  visitAssignExpr(expr: Assign): R;
-  visitBinaryExpr(expr: Binary): R;
-  visitGroupingExpr(expr: Grouping): R;
-  visitLiteralExpr(expr: Literal): R;
-  visitUnaryExpr(expr: Unary): R;
-  visitTernaryExpr(expr: Ternary): R;
-  visitVariableExpr(expr: Variable): R;
-}
-
-// Visitor pattern, double dispatch.
-export abstract class Expr {
-  abstract accept<R>(visitor: Visitor<R>): R;
-}
 
 /**
  * Binary production rule:
  *
  * binary -> expression operator expression ;
- *
  */
-export class Binary extends Expr {
+export class Binary {
+  readonly kind = "Binary" as const;
+
   constructor(
     readonly left: Expr,
     readonly operator: Token,
     readonly right: Expr,
-  ) {
-    super();
-  }
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitBinaryExpr(this);
-  }
+  ) {}
 }
 
 /**
@@ -64,14 +38,10 @@ export class Binary extends Expr {
  *
  * grouping → "(" expression ")" ;
  */
-export class Grouping extends Expr {
-  constructor(readonly expression: Expr) {
-    super();
-  }
+export class Grouping {
+  readonly kind = "Grouping" as const;
 
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitGroupingExpr(this);
-  }
+  constructor(readonly expression: Expr) {}
 }
 
 /**
@@ -79,14 +49,10 @@ export class Grouping extends Expr {
  *
  * literal → NUMBER | STRING | "true" | "false" | "nil" ;
  */
-export class Literal extends Expr {
-  constructor(readonly value: TokenLiteral) {
-    super();
-  }
+export class Literal {
+  readonly kind = "Literal" as const;
 
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitLiteralExpr(this);
-  }
+  constructor(readonly value: TokenLiteral) {}
 }
 
 /**
@@ -94,17 +60,13 @@ export class Literal extends Expr {
  *
  * unary → ( "-" | "!" ) expression ;
  */
-export class Unary extends Expr {
+export class Unary {
+  readonly kind = "Unary" as const;
+
   constructor(
     readonly operator: Token,
     readonly right: Expr,
-  ) {
-    super();
-  }
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitUnaryExpr(this);
-  }
+  ) {}
 }
 
 /**
@@ -112,18 +74,14 @@ export class Unary extends Expr {
  *
  * equality -> equality "?" equality ":" equality ;
  */
-export class Ternary extends Expr {
+export class Ternary {
+  readonly kind = "Ternary" as const;
+
   constructor(
     readonly condition: Expr,
     readonly thenBranch: Expr,
     readonly elseBranch: Expr,
-  ) {
-    super();
-  }
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitTernaryExpr(this);
-  }
+  ) {}
 }
 
 /**
@@ -131,14 +89,10 @@ export class Ternary extends Expr {
  *
  * primary -> ... | IDENTIFIER ;
  */
-export class Variable extends Expr {
-  constructor(readonly name: Token) {
-    super();
-  }
+export class Variable {
+  readonly kind = "Variable" as const;
 
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitVariableExpr(this);
-  }
+  constructor(readonly name: Token) {}
 }
 
 /**
@@ -146,15 +100,23 @@ export class Variable extends Expr {
  *
  * assignment -> IDENTIFIER "=" assignment | ternary ;
  */
-export class Assign extends Expr {
+export class Assign {
+  readonly kind = "Assign" as const;
+
   constructor(
     readonly name: Token,
     readonly value: Expr,
-  ) {
-    super();
-  }
-
-  accept<R>(visitor: Visitor<R>): R {
-    return visitor.visitAssignExpr(this);
-  }
+  ) {}
 }
+
+/**
+ * Discriminated union of all expression nodes.
+ */
+export type Expr =
+  | Binary
+  | Grouping
+  | Literal
+  | Unary
+  | Ternary
+  | Variable
+  | Assign;

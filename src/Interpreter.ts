@@ -1,51 +1,15 @@
 import { Environment } from "./Environments.js";
-import {
-  Assign,
-  Binary,
-  Expr,
-  Grouping,
-  Literal,
-  Ternary,
-  Unary,
-  Variable,
-  type Visitor as ExprVisitor,
-} from "./Expr.js";
+import type { Expr } from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { RuntimeError } from "./RuntimeError.js";
-import type { Block, Expression, Print, Stmt, Visitor as StmtVisitor, VarDecl } from "./Stmt.js";
+import type { Stmt } from "./Stmt.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
 export type LoxValue = string | number | boolean | null;
 
-export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue> {
+export class Interpreter {
   private environment = new Environment();
-
-  visitExpressionStmt(stmt: Expression): LoxValue {
-    this.evaluate(stmt.expression);
-    return null;
-  }
-
-  visitPrintStmt(stmt: Print): LoxValue {
-    const value = this.evaluate(stmt.expression);
-    console.log(this.stringify(value));
-    return null;
-  }
-
-  visitVarStmt(stmt: VarDecl): LoxValue {
-    let value: LoxValue = null;
-    if (stmt.initializer !== null) {
-      value = this.evaluate(stmt.initializer);
-    }
-    this.environment.define(stmt.name.lexeme, value);
-    return null;
-  }
-
-  visitAssignExpr(expr: Assign): LoxValue {
-    const value = this.evaluate(expr.value);
-    this.environment.assign(expr.name, value);
-    return value;
-  }
 
   interpret(statements: Array<Stmt>) {
     try {
@@ -61,86 +25,147 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
     }
   }
 
-  visitVariableExpr(expr: Variable): LoxValue {
-    return this.environment.get(expr.name);
-  }
+  private evaluate(expr: Expr): LoxValue {
+    switch (expr.kind) {
+      case "Literal":
+        return expr.value;
 
-  visitBinaryExpr(expr: Binary): LoxValue {
-    // postorder, left right root
-    const left = this.evaluate(expr.left);
-    const right = this.evaluate(expr.right);
+      case "Grouping":
+        return this.evaluate(expr.expression);
 
-    switch (expr.operator.type) {
-      // comparison operations
-      case TokenType.GREATER:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) > Number(right);
-      case TokenType.GREATER_EQUAL:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) >= Number(right);
-      case TokenType.LESS:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) < Number(right);
-      case TokenType.LESS_EQUAL:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) <= Number(right);
-      // equality
-      case TokenType.BANG_EQUAL:
-        return !this.isEqual(left, right);
-      case TokenType.EQUAL_EQUAL:
-        return this.isEqual(left, right);
-      // arithmetic operations
-      case TokenType.MINUS:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) - Number(right);
-      case TokenType.SLASH:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) / Number(right);
-      case TokenType.STAR:
-        this.checkNumberOperands(expr.operator, left, right);
-        return Number(left) * Number(right);
-      case TokenType.PLUS:
-        if (typeof left === "number" && typeof right === "number") {
-          return left + right;
+      case "Unary": {
+        const right = this.evaluate(expr.right);
+
+        switch (expr.operator.type) {
+          case TokenType.MINUS:
+            this.checkNumberOperand(expr.operator, right);
+            return -Number(right);
+          case TokenType.BANG:
+            return !this.isTruthy(right);
         }
-        if (typeof left === "string" || typeof right === "string") {
-          return String(left).concat(String(right));
+
+        return null;
+      }
+
+      case "Binary": {
+        // postorder: left, right, root
+        const left = this.evaluate(expr.left);
+        const right = this.evaluate(expr.right);
+
+        switch (expr.operator.type) {
+          // comparison operations
+          case TokenType.GREATER:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) > Number(right);
+          case TokenType.GREATER_EQUAL:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) >= Number(right);
+          case TokenType.LESS:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) < Number(right);
+          case TokenType.LESS_EQUAL:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) <= Number(right);
+          // equality
+          case TokenType.BANG_EQUAL:
+            return !this.isEqual(left, right);
+          case TokenType.EQUAL_EQUAL:
+            return this.isEqual(left, right);
+          // arithmetic operations
+          case TokenType.MINUS:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) - Number(right);
+          case TokenType.SLASH:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) / Number(right);
+          case TokenType.STAR:
+            this.checkNumberOperands(expr.operator, left, right);
+            return Number(left) * Number(right);
+          case TokenType.PLUS:
+            if (typeof left === "number" && typeof right === "number") {
+              return left + right;
+            }
+            if (typeof left === "string" || typeof right === "string") {
+              return String(left).concat(String(right));
+            }
+            // throw error if neither cases match
+            throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
+          // other operators
+          case TokenType.COMMA:
+            return right;
         }
-        // throw error if neither cases match
-        throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
-      // other operators
-      case TokenType.COMMA:
-        return right;
+
+        return null;
+      }
+
+      case "Ternary": {
+        const condition = this.evaluate(expr.condition);
+        if (this.isTruthy(condition)) {
+          return this.evaluate(expr.thenBranch);
+        } else {
+          return this.evaluate(expr.elseBranch);
+        }
+      }
+
+      case "Variable":
+        return this.environment.get(expr.name);
+
+      case "Assign": {
+        const value = this.evaluate(expr.value);
+        this.environment.assign(expr.name, value);
+        return value;
+      }
+
+      default: {
+        const _exhaustiveCheck: never = expr;
+        throw new Error(`Unhandled expression kind: ${JSON.stringify(_exhaustiveCheck)}`);
+      }
     }
-
-    return null;
   }
 
-  visitGroupingExpr(expr: Grouping): LoxValue {
-    // evaluate the expression in the group
-    return this.evaluate(expr.expression);
-  }
+  private execute(statement: Stmt): void {
+    switch (statement.kind) {
+      case "Expression":
+        this.evaluate(statement.expression);
+        break;
 
-  visitLiteralExpr(expr: Literal): LoxValue {
-    return expr.value;
-  }
+      case "Print": {
+        const value = this.evaluate(statement.expression);
+        console.log(this.stringify(value));
+        break;
+      }
 
-  /**
-   * evaluate expression then apply unary operator on the value
-   */
-  visitUnaryExpr(expr: Unary): LoxValue {
-    const right = this.evaluate(expr.right);
+      case "VarDecl": {
+        let value: LoxValue = null;
+        if (statement.initializer !== null) {
+          value = this.evaluate(statement.initializer);
+        }
+        this.environment.define(statement.name.lexeme, value);
+        break;
+      }
 
-    switch (expr.operator.type) {
-      case TokenType.MINUS:
-        // TODO handle dynamic runtime error if not castable, because lox is dynamically typed language
-        this.checkNumberOperand(expr.operator, right);
-        return -Number(right);
-      case TokenType.BANG:
-        return !this.isTruthy(right);
+      case "Block":
+        this.executeBlock(statement.statements, new Environment(this.environment));
+        break;
+
+      default: {
+        const _exhaustiveCheck: never = statement;
+        throw new Error(`Unhandled statement kind: ${JSON.stringify(_exhaustiveCheck)}`);
+      }
     }
+  }
 
-    return null;
+  executeBlock(statements: Stmt[], environment: Environment) {
+    const previous = this.environment;
+    try {
+      this.environment = environment;
+
+      for (const statement of statements) {
+        this.execute(statement);
+      }
+    } finally {
+      this.environment = previous;
+    }
   }
 
   private checkNumberOperand(operator: Token, operand: LoxValue) {
@@ -169,41 +194,5 @@ export class Interpreter implements ExprVisitor<LoxValue>, StmtVisitor<LoxValue>
   private stringify(value: LoxValue) {
     if (value === null) return "nil";
     return String(value);
-  }
-
-  visitTernaryExpr(expr: Ternary): LoxValue {
-    const condition = this.evaluate(expr.condition);
-    if (this.isTruthy(condition)) {
-      return this.evaluate(expr.thenBranch);
-    } else {
-      return this.evaluate(expr.elseBranch);
-    }
-  }
-
-  private evaluate(expr: Expr): LoxValue {
-    // evaluate itself
-    return expr.accept(this);
-  }
-
-  private execute(statement: Stmt) {
-    statement.accept(this);
-  }
-
-  visitBlockStmt(stmt: Block): null {
-    this.executeBlock(stmt.statements, new Environment(this.environment));
-    return null;
-  }
-
-  executeBlock(statements: Stmt[], environment: Environment) {
-    const previous = this.environment;
-    try {
-      this.environment = environment;
-
-      for (const statement of statements) {
-        this.execute(statement);
-      }
-    } finally {
-      this.environment = previous;
-    }
   }
 }

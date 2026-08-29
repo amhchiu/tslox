@@ -3,7 +3,6 @@ import { Scanner } from "./Scanner.js";
 import { Parser } from "./Parser.js";
 import { AstPrinter } from "./AstPrinter.js";
 import { Lox } from "./Lox.js";
-import { Expression } from "./Stmt.js";
 
 function parseAndPrint(source: string): string {
   const cleanedSource = source.endsWith(";") ? source : `${source};`;
@@ -14,7 +13,7 @@ function parseAndPrint(source: string): string {
   if (statements.length === 0) throw new Error(`Failed to parse expression: "${source}"`);
   const firstStmt = statements[0]!;
 
-  if (firstStmt instanceof Expression) {
+  if (firstStmt.kind === "Expression") {
     return new AstPrinter().print(firstStmt.expression);
   }
 

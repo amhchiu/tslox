@@ -1,6 +1,6 @@
-import { Assign, Binary, Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
+import { Assign, Binary, type Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import { Block, Expression, Print, Stmt, VarDecl } from "./Stmt.js";
+import { Block, Expression, Print, type Stmt, VarDecl } from "./Stmt.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
