@@ -6,18 +6,43 @@ import type { Token } from "./Token.js";
  * Implemented using tagged (discriminated) unions and switch-case pattern matching.
  */
 
+/**
+ * Expression statement production rule:
+ *
+ * exprStmt → expression ";" ;
+ *
+ * @example
+ * 1 + 2;
+ */
 export class Expression {
   readonly kind = "Expression" as const;
 
   constructor(readonly expression: Expr) {}
 }
 
+/**
+ * Print statement production rule:
+ *
+ * printStmt → "print" expression ";" ;
+ *
+ * @example
+ * print "hello world";
+ */
 export class Print {
   readonly kind = "Print" as const;
 
   constructor(readonly expression: Expr) {}
 }
 
+/**
+ * Variable declaration production rule:
+ *
+ * varDecl → "var" IDENTIFIER ( "=" expression )? ";" ;
+ *
+ * @example
+ * var beverage = "espresso";
+ * var a;
+ */
 export class VarDecl {
   readonly kind = "VarDecl" as const;
 
@@ -28,8 +53,15 @@ export class VarDecl {
 }
 
 /**
- * Block is a series of statements or declarations surrounded by curly braces
+ * Block statement production rule:
+ *
  * block → "{" declaration* "}" ;
+ *
+ * @example
+ * {
+ *   var a = 1;
+ *   print a;
+ * }
  */
 export class Block {
   readonly kind = "Block" as const;

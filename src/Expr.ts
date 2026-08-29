@@ -22,6 +22,9 @@ import type { Token, TokenLiteral } from "./Token.js";
  * Binary production rule:
  *
  * binary -> expression operator expression ;
+ *
+ * @example
+ * 1 + 2
  */
 export class Binary {
   readonly kind = "Binary" as const;
@@ -37,6 +40,9 @@ export class Binary {
  * Grouping production rule:
  *
  * grouping → "(" expression ")" ;
+ *
+ * @example
+ * (1 + 2)
  */
 export class Grouping {
   readonly kind = "Grouping" as const;
@@ -48,6 +54,12 @@ export class Grouping {
  * Literal production rule:
  *
  * literal → NUMBER | STRING | "true" | "false" | "nil" ;
+ *
+ * @example
+ * 123
+ * "hello"
+ * true
+ * nil
  */
 export class Literal {
   readonly kind = "Literal" as const;
@@ -59,6 +71,10 @@ export class Literal {
  * Unary production rule:
  *
  * unary → ( "-" | "!" ) expression ;
+ *
+ * @example
+ * -123
+ * !true
  */
 export class Unary {
   readonly kind = "Unary" as const;
@@ -73,6 +89,9 @@ export class Unary {
  * Ternary production rule:
  *
  * equality -> equality "?" equality ":" equality ;
+ *
+ * @example
+ * condition ? 1 : 2
  */
 export class Ternary {
   readonly kind = "Ternary" as const;
@@ -88,6 +107,9 @@ export class Ternary {
  * Node for use in primary production rule
  *
  * primary -> ... | IDENTIFIER ;
+ *
+ * @example
+ * breakfast
  */
 export class Variable {
   readonly kind = "Variable" as const;
@@ -99,6 +121,9 @@ export class Variable {
  * Assignment production rule:
  *
  * assignment -> IDENTIFIER "=" assignment | ternary ;
+ *
+ * @example
+ * a = 1
  */
 export class Assign {
   readonly kind = "Assign" as const;
