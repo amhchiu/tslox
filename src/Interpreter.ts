@@ -25,6 +25,19 @@ export class Interpreter {
     }
   }
 
+  interpretExpression(expression: Expr) {
+    try {
+      const value = this.evaluate(expression);
+      console.log(this.stringify(value));
+    } catch (error) {
+      if (error instanceof RuntimeError) {
+        Lox.runtimeError(error);
+      } else {
+        throw error;
+      }
+    }
+  }
+
   private evaluate(expr: Expr): LoxValue {
     switch (expr.kind) {
       case "Literal":

@@ -56,7 +56,10 @@ class ParseError extends Error {
 export class Parser {
   private current = 0;
 
-  constructor(readonly tokens: Token[]) {}
+  constructor(
+    readonly tokens: Token[],
+    private readonly silent = false,
+  ) {}
 
   /**
    * Entrypoint to run the parser on the tokens // program rule
@@ -72,6 +75,19 @@ export class Parser {
       }
     }
     return statements;
+  }
+
+  /**
+   * Parse single expression (Used by REPL)
+   */
+  public parseExpression(): Expr | null {
+    try {
+      const expression = this.expression();
+      if (!this.isAtEnd()) return null;
+      return expression;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -388,7 +404,9 @@ export class Parser {
    * By doing this, we can discard the remaining tokens until we reach a new boundary to start safely parsing again
    */
   private error(token: Token, message: string): ParseError {
-    Lox.tokenError(token, message);
+    if (!this.silent) {
+      Lox.tokenError(token, message);
+    }
     return new ParseError();
   }
 

@@ -51,15 +51,24 @@ export class Lox {
     rl.prompt();
 
     for await (const line of rl) {
-      Lox.run(line);
+      Lox.run(line, true);
       Lox.hadError = false; // Reset error state for interactive prompt
       rl.prompt();
     }
   }
 
-  private static run(source: string): void {
+  private static run(source: string, isREPL = false): void {
     const scanner = new Scanner(source);
     const tokens: Token[] = scanner.scanTokens();
+
+    if (isREPL) {
+      const exprParser = new Parser(tokens, true);
+      const expr = exprParser.parseExpression();
+      if (expr !== null) {
+        this.interpreter.interpretExpression(expr);
+        return;
+      }
+    }
 
     const parser = new Parser(tokens);
     const statements = parser.parse();

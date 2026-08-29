@@ -102,4 +102,23 @@ describe("Parser & AstPrinter Integration", () => {
     // Reset error state after test
     Lox.hadError = false;
   });
+
+  it("parseExpression parses standalone expressions without semicolons", () => {
+    const scanner = new Scanner("1 + 2");
+    const parser = new Parser(scanner.scanTokens(), true);
+    const expr = parser.parseExpression();
+
+    expect(expr).not.toBeNull();
+    expect(new AstPrinter().print(expr!)).toBe("(+ 1 2)");
+  });
+
+  it("parseExpression returns null for statements without logging errors", () => {
+    Lox.hadError = false;
+    const scanner = new Scanner("var a = 1;");
+    const parser = new Parser(scanner.scanTokens(), true);
+    const expr = parser.parseExpression();
+
+    expect(expr).toBeNull();
+    expect(Lox.hadError).toBe(false);
+  });
 });

@@ -118,4 +118,14 @@ describe("Interpreter Integration Tests", () => {
     expect(Lox.hadRuntimeError).toBe(true);
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Operand must be a number"));
   });
+
+  it("interpretExpression evaluates and prints expression values directly", () => {
+    const scanner = new Scanner("1 + 2");
+    const parser = new Parser(scanner.scanTokens());
+    const expr = parser.parseExpression();
+
+    expect(expr).not.toBeNull();
+    interpreter.interpretExpression(expr!);
+    expect(logSpy).toHaveBeenCalledWith("3");
+  });
 });
