@@ -129,6 +129,18 @@ export class Interpreter {
         return value;
       }
 
+      case "Logical": {
+        const left = this.evaluate(expr.left);
+
+        if (expr.operator.type === TokenType.OR) {
+          if (this.isTruthy(left)) return left;
+        } else if (expr.operator.type === TokenType.AND) {
+          if (!this.isTruthy(left)) return left; // `print false and "apple"` -> prints false. short circuit
+        }
+
+        return this.evaluate(expr.right);
+      }
+
       default: {
         const _exhaustiveCheck: never = expr;
         throw new Error(`Unhandled expression kind: ${JSON.stringify(_exhaustiveCheck)}`);

@@ -26,6 +26,9 @@ export class AstPrinter {
         // a = 5 -> lisp like prefix notation (= a 5)
         return this.parenthesize(`= ${expr.name.lexeme}`, expr.value);
 
+      case "Logical":
+        return this.parenthesize(expr.operator.lexeme, expr.left, expr.right);
+
       default: {
         const _exhaustiveCheck: never = expr;
         throw new Error(`Unhandled expression kind: ${JSON.stringify(_exhaustiveCheck)}`);

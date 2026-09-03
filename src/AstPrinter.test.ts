@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { AstPrinter } from "./AstPrinter.js";
-import { Binary, Unary, Literal, Grouping } from "./Expr.js";
+import { Binary, Grouping, Literal, Logical, Unary } from "./Expr.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -14,5 +14,16 @@ describe("AstPrinter", () => {
 
     const printer = new AstPrinter();
     expect(printer.print(expression)).toBe("(* (- 123) (group 45.67))");
+  });
+
+  it("prints logical expressions", () => {
+    const expression = new Logical(
+      new Literal(true),
+      new Token(TokenType.OR, "or", null, 1),
+      new Literal(false),
+    );
+
+    const printer = new AstPrinter();
+    expect(printer.print(expression)).toBe("(or true false)");
   });
 });

@@ -88,7 +88,7 @@ export class Unary {
 /**
  * Ternary production rule:
  *
- * equality -> equality "?" equality ":" equality ;
+ * ternary → logic_or ( "?" expression ":" ternary)? ;
  *
  * @example
  * condition ? 1 : 2
@@ -135,13 +135,23 @@ export class Assign {
 }
 
 /**
+ * Logic production rule:
+ *
+ * logic_or       → logic_and ( "or" logic_and )* ;        // ternary higher precedence, so `a and b ? c : d` evaluates as `(a and b) ? c : d`
+ * logic_and      → equality ( "and" equality )* ;
+ *
+ */
+export class Logical {
+  readonly kind = "Logical" as const;
+
+  constructor(
+    readonly left: Expr,
+    readonly operator: Token,
+    readonly right: Expr,
+  ) {}
+}
+
+/**
  * Discriminated union of all expression nodes.
  */
-export type Expr =
-  | Binary
-  | Grouping
-  | Literal
-  | Unary
-  | Ternary
-  | Variable
-  | Assign;
+export type Expr = Binary | Grouping | Literal | Unary | Ternary | Variable | Assign | Logical;

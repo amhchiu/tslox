@@ -1,4 +1,14 @@
-import { Assign, Binary, type Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
+import {
+  Assign,
+  Binary,
+  type Expr,
+  Grouping,
+  Literal,
+  Logical,
+  Ternary,
+  Unary,
+  Variable,
+} from "./Expr.js";
 import { Lox } from "./Lox.js";
 import { Block, Expression, If, Print, type Stmt, VarDecl } from "./Stmt.js";
 import { Token } from "./Token.js";
@@ -31,7 +41,9 @@ class ParseError extends Error {
  *  expression     → comma ;
  *  comma          → assignment ( "," assignment )* ;
  *  assignment     → IDENTIFIER "=" assignment | ternary ;
- *  ternary        → equality ( "?" expression ":" ternary)? ;
+ *  ternary        → logic_or ( "?" expression ":" ternary)? ;
+ *  logic_or       → logic_and ( "or" logic_and )* ;        // ternary higher precedence, so `a and b ? c : d` evaluates as `(a and b) ? c : d`
+ *  logic_and      → equality ( "and" equality )* ;
  *  equality       → comparison ( ( "!=" | "==" ) comparison )* ;
  *  comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
  *  term           → factor ( ( "-" | "+" ) factor )* ;
@@ -225,16 +237,45 @@ export class Parser {
   }
 
   /**
-   * ternary → equality ( "?" expression ":" ternary)? ;
+   * ternary → logic_or ( "?" expression ":" ternary)? ;
    */
   private ternary(): Expr {
-    let expr = this.equality();
+    let expr = this.or();
 
     if (this.match(TokenType.QUESTION)) {
       const thenExpr = this.expression();
       this.consume(TokenType.COLON, ": expected after then expression");
       const elseExpr = this.ternary();
       expr = new Ternary(expr, thenExpr, elseExpr);
+    }
+
+    return expr;
+  }
+
+  /**
+   * logic_or -> logic_and ( "or" logic_and )*
+   */
+  private or(): Expr {
+    let expr = this.and();
+
+    if (this.match(TokenType.OR)) {
+      const operator = this.previous();
+      const right = this.and();
+      expr = new Logical(expr, operator, right);
+    }
+    return expr;
+  }
+
+  /**
+   * logic_and → equality ( "and" equality )* ;
+   */
+  private and(): Expr {
+    let expr = this.equality();
+
+    if (this.match(TokenType.AND)) {
+      const operator = this.previous();
+      const right = this.equality();
+      expr = new Logical(expr, operator, right);
     }
 
     return expr;
