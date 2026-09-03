@@ -1,6 +1,6 @@
 import { Assign, Binary, type Expr, Grouping, Literal, Ternary, Unary, Variable } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import { Block, Expression, Print, type Stmt, VarDecl } from "./Stmt.js";
+import { Block, Expression, If, Print, type Stmt, VarDecl } from "./Stmt.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -21,7 +21,9 @@ class ParseError extends Error {
  *  program        → declaration* EOF ;                     // A program is a list of declarations
  *  declaration    → varDecl | statement ;                  // Declare variables, functions and classes and statements
  *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- *  statement      → exprStmt | printStmt | block ;
+ *  statement      → exprStmt | ifStmt | printStmt | block ;
+ *  ifStmt         → "if" "(" expression ")" statement
+               ( "else" statement )? ;
  *  block          → "{" declaration+ "}" ;
  *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  printstmt      → "print" expression ";" ;
@@ -115,13 +117,31 @@ export class Parser {
   }
 
   /**
-   * statement -> exprStmt | printStmt | block ;
+   * statement -> exprStmt | ifStmt | printStmt | block ;
    */
   private statement(): Stmt {
+    if (this.match(TokenType.IF)) return this.ifStatement();
     if (this.match(TokenType.PRINT)) return this.printStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
 
     return this.expressionStatement();
+  }
+
+  /**
+   * ifStmt → "if" "(" expression ")" statement ( "else" statement )? ;
+   */
+  private ifStatement(): Stmt {
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'if'.");
+    const condition = this.expression();
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after if condition.");
+
+    const thenBranch = this.statement();
+    let elseBranch: Stmt | null = null;
+    if (this.match(TokenType.ELSE)) {
+      elseBranch = this.statement();
+    }
+
+    return new If(condition, thenBranch, elseBranch);
   }
 
   /**

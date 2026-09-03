@@ -69,7 +69,17 @@ export class Block {
   constructor(readonly statements: Stmt[]) {}
 }
 
+export class If {
+  readonly kind = "If" as const;
+
+  constructor(
+    readonly condition: Expr,
+    readonly thenBranch: Stmt,
+    readonly elseBranch: Stmt | null,
+  ) {}
+}
+
 /**
  * Discriminated union of all statement nodes.
  */
-export type Stmt = Expression | Print | VarDecl | Block;
+export type Stmt = Expression | If | Print | VarDecl | Block;

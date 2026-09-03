@@ -161,6 +161,14 @@ export class Interpreter {
         this.executeBlock(statement.statements, new Environment(this.environment));
         break;
 
+      case "If":
+        if (this.isTruthy(this.evaluate(statement.condition))) {
+          this.execute(statement.thenBranch);
+        } else if (statement.elseBranch !== null) {
+          this.execute(statement.elseBranch);
+        }
+        break;
+
       default: {
         const _exhaustiveCheck: never = statement;
         throw new Error(`Unhandled statement kind: ${JSON.stringify(_exhaustiveCheck)}`);
