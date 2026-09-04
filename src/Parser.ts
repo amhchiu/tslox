@@ -10,7 +10,7 @@ import {
   Variable,
 } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import { Block, Expression, If, Print, type Stmt, VarDecl } from "./Stmt.js";
+import { Block, Expression, If, Print, type Stmt, VarDecl, While } from "./Stmt.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -31,9 +31,9 @@ class ParseError extends Error {
  *  program        → declaration* EOF ;                     // A program is a list of declarations
  *  declaration    → varDecl | statement ;                  // Declare variables, functions and classes and statements
  *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- *  statement      → exprStmt | ifStmt | printStmt | block ;
- *  ifStmt         → "if" "(" expression ")" statement
-               ( "else" statement )? ;
+ *  statement      → exprStmt | ifStmt | printStmt | whileStmt | block ;
+ *  ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
+ *  whileStmt      → "while" "(" expression ")" statement ;
  *  block          → "{" declaration+ "}" ;
  *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  printstmt      → "print" expression ";" ;
@@ -129,11 +129,12 @@ export class Parser {
   }
 
   /**
-   * statement -> exprStmt | ifStmt | printStmt | block ;
+   * statement -> exprStmt | ifStmt | printStmt | whileStmt | block ;
    */
   private statement(): Stmt {
     if (this.match(TokenType.IF)) return this.ifStatement();
     if (this.match(TokenType.PRINT)) return this.printStatement();
+    if (this.match(TokenType.WHILE)) return this.whileStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
 
     return this.expressionStatement();
@@ -163,6 +164,17 @@ export class Parser {
     const expr = this.expression();
     this.consume(TokenType.SEMICOLON, "Expect ';' after value");
     return new Print(expr);
+  }
+
+  /**
+   *  whileStmt → "while" "(" expression ")" statement ;
+   */
+  private whileStatement(): Stmt {
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while',");
+    const condition = this.expression();
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition,");
+    const body = this.statement();
+    return new While(condition, body);
   }
 
   /**

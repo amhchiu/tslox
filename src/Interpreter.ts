@@ -181,6 +181,12 @@ export class Interpreter {
         }
         break;
 
+      case "While":
+        while (this.isTruthy(this.evaluate(statement.condition))) {
+          this.execute(statement.body);
+        }
+        break; 
+
       default: {
         const _exhaustiveCheck: never = statement;
         throw new Error(`Unhandled statement kind: ${JSON.stringify(_exhaustiveCheck)}`);

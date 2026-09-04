@@ -80,6 +80,26 @@ export class If {
 }
 
 /**
+ * While statement production rule:
+ *
+ * whileStmt → "while" "(" expression ")" statement ;
+ *
+ * @example
+ * while (a < 10) {
+ *   print a;
+ *   a = a + 1;
+ * }
+ */
+export class While {
+  readonly kind = "While" as const;
+
+  constructor(
+    readonly condition: Expr,
+    readonly body: Stmt,
+  ) {}
+}
+
+/**
  * Discriminated union of all statement nodes.
  */
-export type Stmt = Expression | If | Print | VarDecl | Block;
+export type Stmt = Expression | If | Print | VarDecl | Block | While;

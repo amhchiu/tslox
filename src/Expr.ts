@@ -140,6 +140,9 @@ export class Assign {
  * logic_or       → logic_and ( "or" logic_and )* ;        // ternary higher precedence, so `a and b ? c : d` evaluates as `(a and b) ? c : d`
  * logic_and      → equality ( "and" equality )* ;
  *
+ * @example
+ * true or false
+ * a and b
  */
 export class Logical {
   readonly kind = "Logical" as const;
