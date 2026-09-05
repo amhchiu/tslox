@@ -6,6 +6,14 @@ import type { Stmt } from "./Stmt.js";
 import type { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
+class BreakException extends Error {
+  constructor() {
+    super();
+    // Set the prototype explicitly (recommended when extending built-in classes in TS/JS)
+    Object.setPrototypeOf(this, BreakException.prototype);
+  }
+}
+
 export type LoxValue = string | number | boolean | null;
 
 export class Interpreter {
@@ -183,9 +191,20 @@ export class Interpreter {
 
       case "While":
         while (this.isTruthy(this.evaluate(statement.condition))) {
-          this.execute(statement.body);
+          try {
+            this.execute(statement.body);
+          } catch (ex) {
+            if (ex instanceof BreakException) {
+              break;
+            }
+            throw ex;
+          }
         }
         break;
+
+      case "Break":
+        // throw exception which is caught by while loop
+        throw new BreakException();
 
       default: {
         const _exhaustiveCheck: never = statement;

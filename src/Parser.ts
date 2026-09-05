@@ -10,7 +10,7 @@ import {
   Variable,
 } from "./Expr.js";
 import { Lox } from "./Lox.js";
-import { Block, Expression, If, Print, type Stmt, VarDecl, While } from "./Stmt.js";
+import { Block, Break, Expression, If, Print, type Stmt, VarDecl, While } from "./Stmt.js";
 import { Token } from "./Token.js";
 import { TokenType } from "./TokenType.js";
 
@@ -31,15 +31,16 @@ class ParseError extends Error {
  *  program        → declaration* EOF ;                     // A program is a list of declarations
  *  declaration    → varDecl | statement ;                  // Declare variables, functions and classes and statements
  *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- *  statement      → exprStmt | forStmt | ifStmt | whileStmt | printStmt | block ;
+ *  statement      → exprStmt | forStmt | ifStmt | whileStmt | printStmt | block | breakStmt ;
+ *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  forStmt        → "for" "(" ( varDecl | exprStmt | ";" )   // for ( var i = 0 ;       # Initialiser
  *                    expression? ";"                         //        i < 10 ;         # The condition to exit loop
  *                    expression? ")" statement ;             //        i = i + 1) print i;     # The increment
- *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
  *  whileStmt      → "while" "(" expression ")" statement ;
  *  printstmt      → "print" expression ";" ;
  *  block          → "{" declaration* "}" ;
+ *  break          → "break" ";" ;
  *
  *  expression     → comma ;
  *  comma          → assignment ( "," assignment )* ;
@@ -72,6 +73,7 @@ class ParseError extends Error {
  */
 export class Parser {
   private current = 0;
+  private loopDepth = 0;
 
   constructor(
     readonly tokens: Token[],
@@ -132,7 +134,7 @@ export class Parser {
   }
 
   /**
-   * statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
+   * statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block | breakStmt ;
    */
   private statement(): Stmt {
     if (this.match(TokenType.FOR)) return this.forStatement();
@@ -140,6 +142,7 @@ export class Parser {
     if (this.match(TokenType.PRINT)) return this.printStatement();
     if (this.match(TokenType.WHILE)) return this.whileStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
+    if (this.match(TokenType.BREAK)) return this.breakStatement();
 
     return this.expressionStatement();
   }
@@ -175,26 +178,31 @@ export class Parser {
     }
     this.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
 
-    // 4. Desugar increment: runs after each iteration of the loop body.
-    // e.g. { print i; i = i + 1; }
-    let body = this.statement(); // print i;
-    if (increment !== null) {
-      // { print i; i = i + 1 }
-      body = new Block([body, new Expression(increment)]);
+    try {
+      this.loopDepth++;
+      // 4. Desugar increment: runs after each iteration of the loop body.
+      // e.g. { print i; i = i + 1; }
+      let body = this.statement(); // print i;
+      if (increment !== null) {
+        // { print i; i = i + 1 }
+        body = new Block([body, new Expression(increment)]);
+      }
+
+      // 5. Desugar condition into a while loop: defaults to infinite loop (while (true)) if omitted.
+      // e.g. while (i < 10) { print i; i = i + 1; }
+      if (condition === null) condition = new Literal(true);
+      body = new While(condition, body);
+
+      // 6. Desugar initializer: runs once before the loop, enclosed in a block to scope variables.
+      // e.g. { var i = 0; while (i < 10) { ... } }
+      if (initialiser !== null) {
+        body = new Block([initialiser, body]);
+      }
+
+      return body;
+    } finally {
+      this.loopDepth--;
     }
-
-    // 5. Desugar condition into a while loop: defaults to infinite loop (while (true)) if omitted.
-    // e.g. while (i < 10) { print i; i = i + 1; }
-    if (condition === null) condition = new Literal(true);
-    body = new While(condition, body);
-
-    // 6. Desugar initializer: runs once before the loop, enclosed in a block to scope variables.
-    // e.g. { var i = 0; while (i < 10) { ... } }
-    if (initialiser !== null) {
-      body = new Block([initialiser, body]);
-    }
-
-    return body;
   }
 
   /**
@@ -230,8 +238,13 @@ export class Parser {
     this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'while',");
     const condition = this.expression();
     this.consume(TokenType.RIGHT_PAREN, "Expect ')' after condition,");
-    const body = this.statement();
-    return new While(condition, body);
+    try {
+      this.loopDepth++;
+      const body = this.statement();
+      return new While(condition, body);
+    } finally {
+      this.loopDepth--;
+    }
   }
 
   /**
@@ -259,6 +272,14 @@ export class Parser {
 
     this.consume(TokenType.RIGHT_BRACE, "Expect '}' after block.");
     return statements;
+  }
+
+  private breakStatement(): Stmt {
+    if (this.loopDepth === 0) {
+      this.error(this.previous(), "Must be inside a loop to use 'break'.");
+    }
+    this.consume(TokenType.SEMICOLON, "Expect ';' after break.");
+    return new Break();
   }
 
   /**

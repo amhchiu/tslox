@@ -100,6 +100,17 @@ export class While {
 }
 
 /**
+ * Break statement production rule:
+ *
+ * breakStmt -> "break" ";" ;
+ */
+export class Break {
+  readonly kind = "Break" as const;
+
+  constructor() {}
+}
+
+/**
  * Discriminated union of all statement nodes.
  */
-export type Stmt = Expression | If | Print | VarDecl | Block | While;
+export type Stmt = Expression | If | Print | VarDecl | Block | While | Break;
