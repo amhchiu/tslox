@@ -29,9 +29,8 @@ export class Environment {
   }
 
   get(name: Token): LoxValue {
-    const found = this.values.get(name.lexeme);
-    if (found) {
-      return found;
+    if (this.values.has(name.lexeme)) {
+      return this.values.get(name.lexeme)!;
     }
 
     // if variable isn't found in this environment, try enclosing one... recursively

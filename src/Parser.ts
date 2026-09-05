@@ -31,12 +31,15 @@ class ParseError extends Error {
  *  program        → declaration* EOF ;                     // A program is a list of declarations
  *  declaration    → varDecl | statement ;                  // Declare variables, functions and classes and statements
  *  varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
- *  statement      → exprStmt | ifStmt | printStmt | whileStmt | block ;
+ *  statement      → exprStmt | forStmt | ifStmt | whileStmt | printStmt | block ;
+ *  forStmt        → "for" "(" ( varDecl | exprStmt | ";" )   // for ( var i = 0 ;       # Initialiser
+ *                    expression? ";"                         //        i < 10 ;         # The condition to exit loop
+ *                    expression? ")" statement ;             //        i = i + 1) print i;     # The increment
+ *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  ifStmt         → "if" "(" expression ")" statement ( "else" statement )? ;
  *  whileStmt      → "while" "(" expression ")" statement ;
- *  block          → "{" declaration+ "}" ;
- *  exprStmt       → expression ";" ;                       // expressions evaluate to a value
  *  printstmt      → "print" expression ";" ;
+ *  block          → "{" declaration* "}" ;
  *
  *  expression     → comma ;
  *  comma          → assignment ( "," assignment )* ;
@@ -129,15 +132,69 @@ export class Parser {
   }
 
   /**
-   * statement -> exprStmt | ifStmt | printStmt | whileStmt | block ;
+   * statement -> exprStmt | forStmt | ifStmt | printStmt | whileStmt | block ;
    */
   private statement(): Stmt {
+    if (this.match(TokenType.FOR)) return this.forStatement();
     if (this.match(TokenType.IF)) return this.ifStatement();
     if (this.match(TokenType.PRINT)) return this.printStatement();
     if (this.match(TokenType.WHILE)) return this.whileStatement();
     if (this.match(TokenType.LEFT_BRACE)) return new Block(this.block());
 
     return this.expressionStatement();
+  }
+  /**
+   * forStmt → "for" "(" ( varDecl | exprStmt | ";" ) expression? ";" expression? ")" statement ;
+   *
+   * Parser desugars syntax into simpler AST nodes that interpreter supports. Notice we do not have For node. We use existing nodes to represent the loop. for loop can be represented like:
+   * { var i = 0; while (i < 10) { print i; i = i + 1; } }
+   */
+  private forStatement(): Stmt {
+    // 1. Initializer: can be omitted (;), a variable declaration (var i = 0;), or an expression (i = 0;).
+    this.consume(TokenType.LEFT_PAREN, "Expect '(' after 'for'.");
+    let initialiser: Stmt | null = null;
+    if (this.match(TokenType.SEMICOLON)) {
+      initialiser = null;
+    } else if (this.match(TokenType.VAR)) {
+      initialiser = this.varDeclaration();
+    } else {
+      initialiser = this.expressionStatement();
+    }
+
+    // 2. Condition: optional expression (e.g. i < 10;). If omitted, defaults to true later.
+    let condition: Expr | null = null;
+    if (!this.check(TokenType.SEMICOLON)) {
+      condition = this.expression();
+    }
+    this.consume(TokenType.SEMICOLON, "Expect ';' after loop condition.");
+
+    // 3. Increment: optional expression evaluated after each loop iteration (e.g. i = i + 1).
+    let increment: Expr | null = null;
+    if (!this.check(TokenType.RIGHT_PAREN)) {
+      increment = this.expression();
+    }
+    this.consume(TokenType.RIGHT_PAREN, "Expect ')' after for clauses.");
+
+    // 4. Desugar increment: runs after each iteration of the loop body.
+    // e.g. { print i; i = i + 1; }
+    let body = this.statement(); // print i;
+    if (increment !== null) {
+      // { print i; i = i + 1 }
+      body = new Block([body, new Expression(increment)]);
+    }
+
+    // 5. Desugar condition into a while loop: defaults to infinite loop (while (true)) if omitted.
+    // e.g. while (i < 10) { print i; i = i + 1; }
+    if (condition === null) condition = new Literal(true);
+    body = new While(condition, body);
+
+    // 6. Desugar initializer: runs once before the loop, enclosed in a block to scope variables.
+    // e.g. { var i = 0; while (i < 10) { ... } }
+    if (initialiser !== null) {
+      body = new Block([initialiser, body]);
+    }
+
+    return body;
   }
 
   /**

@@ -185,7 +185,7 @@ export class Interpreter {
         while (this.isTruthy(this.evaluate(statement.condition))) {
           this.execute(statement.body);
         }
-        break; 
+        break;
 
       default: {
         const _exhaustiveCheck: never = statement;
